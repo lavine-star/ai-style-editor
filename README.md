@@ -2,6 +2,11 @@
 
 一个 Vite 插件，让你在浏览器中点选页面元素，通过 Claude Code 自动修改源码样式。
 
+## 仓库地址
+
+- [Gitee](https://gitee.com/Lavines/ai-style-editor)
+- [GitHub](https://github.com/lavine-star/ai-style-editor)
+
 ## 功能介绍
 
 - **浏览器端点选**：悬浮按钮进入选区模式，自动采集 DOM 信息、路由和 Vue 组件文件
