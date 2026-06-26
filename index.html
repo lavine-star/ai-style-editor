@@ -1,10 +1,10 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI 样式调试快速配置指南</title>
-  <!--
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI 样式调试快速配置指南</title>
+    <!--
     Assumptions: 面向 DT-H5 同事和其他 Vite 项目接入者；内容以复制配置和安全边界为主。
     Palette: 靛蓝主色、深色技术背景、浅色内容卡片。
     Type scale: 使用系统中文字体栈，标题紧凑，正文偏清晰文档化。
@@ -16,648 +16,951 @@
       prova: stat-bar
       textura: grid-pattern-sutil
   -->
-  <style>
-    /* ── Reset ─────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
-    html, body { width: 100%; min-height: 100%; overflow-x: hidden; }
-    body { line-height: 1.6; -webkit-font-smoothing: antialiased; }
-    img, picture, video, svg { display: block; max-width: 100%; }
-    input, button, textarea, select { font: inherit; }
-    a { color: inherit; text-decoration: none; }
-    button { cursor: pointer; border: none; background: none; }
-
-    /* ── Design Tokens ─────────────────────────────── */
-    :root {
-      --c-bg:       #070812;
-      --c-surface:  #101323;
-      --c-panel:    #ffffff;
-      --c-panel-2:  #f7f8ff;
-      --c-border:   rgba(255,255,255,0.10);
-      --c-line:     rgba(99,102,241,0.18);
-      --c-text:     #f8fafc;
-      --c-text-dark:#111827;
-      --c-muted:    rgba(248,250,252,0.68);
-      --c-muted-dark:#64748b;
-      --c-accent:   #6366f1;
-      --c-accent-h: #4f46e5;
-      --c-accent-soft: rgba(99,102,241,0.12);
-      --c-good:     #14b8a6;
-      --c-warn:     #f59e0b;
-
-      --f-headline: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-      --f-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-      --f-code: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-      --t-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
-      --t-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
-      --t-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
-      --t-lg:   clamp(1.125rem, 1rem    + 0.6vw,  1.375rem);
-      --t-xl:   clamp(1.375rem, 1.1rem  + 1.3vw,  2rem);
-      --t-2xl:  clamp(1.875rem, 1.4rem  + 2.4vw,  3rem);
-      --t-3xl:  clamp(2.5rem,   1.8rem  + 3.5vw,  4.5rem);
-      --t-4xl:  clamp(3.5rem,   2.5rem  + 5vw,    7rem);
-
-      --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
-      --s-6: 24px;  --s-8: 32px;  --s-12: 48px; --s-16: 64px;
-      --s-24: 96px; --s-32: 128px;
-
-      --r-sm: 8px; --r-md: 14px; --r-lg: 24px; --r-xl: 32px; --r-full: 9999px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
-      --shadow-md: 0 14px 34px rgba(17,24,39,0.14);
-      --shadow-lg: 0 24px 80px rgba(0,0,0,0.36);
-
-      --ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
-      --ease-in:  cubic-bezier(0.4, 0.0, 1, 1);
-      --ease:     cubic-bezier(0.4, 0.0, 0.2, 1);
-      --dur-fast: 120ms;
-      --dur-base: 220ms;
-      --dur-slow: 380ms;
-    }
-
-    body {
-      font-family: var(--f-body);
-      color: var(--c-text);
-      background:
-        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
-        radial-gradient(circle at 78% 10%, rgba(99,102,241,0.40), transparent 34%),
-        radial-gradient(circle at 12% 18%, rgba(20,184,166,0.18), transparent 30%),
-        var(--c-bg);
-      background-size: 42px 42px, 42px 42px, auto, auto, auto;
-    }
-
-    body.compact {
-      --s-8: 24px;
-      --s-12: 36px;
-      --s-16: 48px;
-      --s-24: 72px;
-    }
-
-    body.hide-checklist .checklist-section { display: none; }
-
-    h1, h2, h3 { font-family: var(--f-headline); letter-spacing: -0.04em; }
-    h1 { font-size: var(--t-4xl); font-weight: 900; line-height: 0.96; max-width: 10ch; }
-    h2 { font-size: var(--t-3xl); font-weight: 850; line-height: 1.05; max-width: 13ch; }
-    h3 { font-size: var(--t-xl); font-weight: 800; line-height: 1.15; color: var(--c-text-dark); }
-    p { font-size: var(--t-base); line-height: 1.72; max-width: 65ch; }
-    small, .label { font-size: var(--t-xs); line-height: 1.4; letter-spacing: 0.08em; text-transform: uppercase; }
-
-    :focus-visible {
-      outline: 2px solid var(--c-accent);
-      outline-offset: 3px;
-      border-radius: var(--r-sm);
-    }
-    :focus:not(:focus-visible) { outline: none; }
-
-    .page-shell { width: 100%; }
-    .container {
-      width: 100%;
-      max-width: 1180px;
-      margin-inline: auto;
-      padding-inline: var(--s-6);
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      border-bottom: 1px solid var(--c-border);
-      background: rgba(7,8,18,0.82);
-      backdrop-filter: blur(18px);
-    }
-
-    .topbar-inner {
-      display: flex;
-      min-height: 68px;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--s-4);
-    }
-
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--s-3);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-mark {
-      display: grid;
-      width: 34px;
-      height: 34px;
-      place-items: center;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--c-accent), #a855f7);
-      box-shadow: 0 12px 30px rgba(99,102,241,0.36);
-    }
-
-    .brand-mark svg { width: 19px; height: 19px; fill: none; stroke: #fff; stroke-width: 2; }
-
-    .nav-pills {
-      display: none;
-      align-items: center;
-      gap: var(--s-2);
-      color: var(--c-muted);
-      font-size: var(--t-sm);
-    }
-
-    .nav-pills a {
-      padding: var(--s-2) var(--s-3);
-      border-radius: var(--r-full);
-      transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
-    }
-
-    .nav-pills a:hover { color: var(--c-text); background: rgba(255,255,255,0.08); }
-
-    .hero {
-      padding: var(--s-24) 0 var(--s-16);
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: var(--s-12);
-      align-items: center;
-    }
-
-    .hero-copy {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--s-6);
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--s-2);
-      padding: var(--s-2) var(--s-4);
-      color: #c7d2fe;
-      background: rgba(99,102,241,0.13);
-      border: 1px solid rgba(165,180,252,0.22);
-      border-radius: var(--r-full);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-    }
-
-    .eyebrow-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: var(--r-full);
-      background: var(--c-good);
-      box-shadow: 0 0 0 5px rgba(20,184,166,0.14);
-    }
-
-    .hero-subtitle { color: var(--c-muted); font-size: var(--t-lg); }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--s-3);
-      align-items: center;
-    }
-
-    .btn {
-      display: inline-flex;
-      min-height: 46px;
-      align-items: center;
-      justify-content: center;
-      gap: var(--s-2);
-      padding: var(--s-3) var(--s-6);
-      border-radius: var(--r-full);
-      font-size: var(--t-sm);
-      font-weight: 750;
-      white-space: nowrap;
-      align-self: flex-start;
-      transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
-    }
-
-    .btn-primary {
-      color: #fff;
-      background: var(--c-accent);
-      box-shadow: 0 18px 42px rgba(99,102,241,0.35);
-    }
-
-    .btn-primary:hover { background: var(--c-accent-h); transform: translateY(-1px); box-shadow: 0 22px 54px rgba(99,102,241,0.45); }
-    .btn-secondary { color: var(--c-text); background: rgba(255,255,255,0.08); border: 1px solid var(--c-border); }
-    .btn-secondary:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-
-    .terminal-card {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: var(--r-xl);
-      background: linear-gradient(145deg, rgba(16,19,35,0.96), rgba(17,24,39,0.72));
-      box-shadow: var(--shadow-lg);
-    }
-
-    .terminal-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--s-4);
-      padding: var(--s-4) var(--s-6);
-      border-bottom: 1px solid rgba(255,255,255,0.10);
-      color: var(--c-muted);
-      font-size: var(--t-sm);
-    }
-
-    .traffic { display: flex; gap: var(--s-2); }
-    .traffic span { width: 10px; height: 10px; border-radius: var(--r-full); background: rgba(255,255,255,0.22); }
-    .traffic span:nth-child(1) { background: #fb7185; }
-    .traffic span:nth-child(2) { background: #fbbf24; }
-    .traffic span:nth-child(3) { background: #34d399; }
-
-    .flow-board {
-      display: grid;
-      gap: var(--s-4);
-      padding: var(--s-6);
-    }
-
-    .flow-step {
-      display: grid;
-      grid-template-columns: 42px 1fr;
-      gap: var(--s-4);
-      align-items: start;
-      padding: var(--s-4);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 18px;
-      background: rgba(255,255,255,0.055);
-    }
-
-    .flow-number {
-      display: grid;
-      width: 42px;
-      height: 42px;
-      place-items: center;
-      border-radius: 16px;
-      color: #fff;
-      background: linear-gradient(135deg, var(--c-accent), #a855f7);
-      font-weight: 900;
-    }
-
-    .flow-step strong { display: block; margin-bottom: var(--s-1); color: #fff; }
-    .flow-step span { color: var(--c-muted); font-size: var(--t-sm); }
-
-    .section {
-      padding: var(--s-16) 0;
-    }
-
-    .section-light {
-      color: var(--c-text-dark);
-      background: var(--c-panel);
-    }
-
-    .section-muted {
-      color: var(--c-text-dark);
-      background: var(--c-panel-2);
-    }
-
-    .section-head {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: var(--s-6);
-      margin-bottom: var(--s-12);
-      align-items: end;
-    }
-
-    .section-head p { color: var(--c-muted-dark); }
-    .section-label { color: var(--c-accent); font-weight: 800; margin-bottom: var(--s-3); }
-
-    .step-list { display: grid; gap: var(--s-2); }
-
-    .setup-step {
-      display: grid;
-      grid-template-columns: 56px 1fr;
-      gap: var(--s-6);
-      padding: var(--s-8) 0;
-      border-top: 1px solid rgba(15,23,42,0.10);
-    }
-
-    .setup-step:last-child { border-bottom: 1px solid rgba(15,23,42,0.10); }
-
-    .setup-num {
-      font-size: var(--t-2xl);
-      font-weight: 900;
-      line-height: 1;
-      color: var(--c-accent);
-      opacity: 0.45;
-    }
-
-    .setup-content {
-      display: grid;
-      gap: var(--s-4);
-    }
-
-    .setup-content p { color: var(--c-muted-dark); }
-
-    .code-card {
-      overflow: hidden;
-      border: 1px solid rgba(15,23,42,0.10);
-      border-radius: var(--r-lg);
-      background: #0b1020;
-      box-shadow: var(--shadow-md);
-    }
-
-    .code-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--s-4);
-      padding: var(--s-3) var(--s-4);
-      color: #cbd5e1;
-      background: rgba(255,255,255,0.04);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      font-size: var(--t-xs);
-    }
-
-    .copy-btn {
-      display: inline-flex;
-      min-height: 32px;
-      align-items: center;
-      padding: var(--s-1) var(--s-3);
-      border-radius: var(--r-full);
-      color: #e0e7ff;
-      background: rgba(99,102,241,0.18);
-      border: 1px solid rgba(129,140,248,0.28);
-      font-size: var(--t-xs);
-      transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
-    }
-
-    .copy-btn:hover { background: rgba(99,102,241,0.28); transform: translateY(-1px); }
-
-    pre {
-      overflow-x: auto;
-      padding: var(--s-5, 20px) var(--s-4);
-      color: #dbeafe;
-      font-family: var(--f-code);
-      font-size: 0.88rem;
-      line-height: 1.72;
-    }
-
-    .token-accent { color: #a5b4fc; }
-    .token-good { color: #5eead4; }
-    .token-warn { color: #fcd34d; }
-
-    .bento {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: var(--s-4);
-    }
-
-    .info-card {
-      min-height: 180px;
-      padding: var(--s-8);
-      border: 1px solid rgba(15,23,42,0.10);
-      border-radius: var(--r-lg);
-      background: #fff;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .info-card.large { background: linear-gradient(135deg, #eef2ff, #ffffff 64%); }
-    .info-card p { margin-top: var(--s-4); color: var(--c-muted-dark); }
-
-    .stat-panel {
-      display: grid;
-      gap: var(--s-6);
-      padding: var(--s-8);
-      border-radius: var(--r-xl);
-      background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(20,184,166,0.10));
-      border: 1px solid rgba(99,102,241,0.18);
-    }
-
-    .stat-row { display: grid; gap: var(--s-2); }
-    .stat-top { display: flex; justify-content: space-between; gap: var(--s-4); color: var(--c-text-dark); font-weight: 800; }
-    .stat-track { height: 8px; overflow: hidden; border-radius: var(--r-full); background: rgba(15,23,42,0.10); }
-    .stat-fill { height: 100%; border-radius: var(--r-full); background: var(--c-accent); }
-
-    .table-wrap {
-      overflow-x: auto;
-      border: 1px solid rgba(15,23,42,0.10);
-      border-radius: var(--r-lg);
-      background: #fff;
-      box-shadow: var(--shadow-sm);
-    }
-
-    table { width: 100%; border-collapse: collapse; min-width: 760px; }
-    th, td { padding: var(--s-4); text-align: left; vertical-align: top; border-bottom: 1px solid rgba(15,23,42,0.08); }
-    th { color: #334155; background: #f8fafc; font-size: var(--t-sm); }
-    td { color: #475569; font-size: var(--t-sm); }
-    td code, th code { font-family: var(--f-code); color: var(--c-accent-h); }
-    tr:last-child td { border-bottom: 0; }
-
-    .check-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: var(--s-4);
-    }
-
-    .check-item {
-      display: grid;
-      grid-template-columns: 36px 1fr;
-      gap: var(--s-4);
-      padding: var(--s-5, 20px);
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: var(--r-lg);
-      background: rgba(255,255,255,0.06);
-    }
-
-    .check-icon {
-      display: grid;
-      width: 36px;
-      height: 36px;
-      place-items: center;
-      border-radius: 13px;
-      background: rgba(20,184,166,0.14);
-    }
-
-    .check-icon svg { width: 20px; height: 20px; stroke: #5eead4; stroke-width: 2.4; fill: none; }
-    .check-item strong { display: block; margin-bottom: var(--s-1); }
-    .check-item span { color: var(--c-muted); font-size: var(--t-sm); }
-
-    .faq-list {
-      display: grid;
-      gap: var(--s-4);
-    }
-
-    details {
-      border: 1px solid rgba(15,23,42,0.10);
-      border-radius: var(--r-lg);
-      background: #fff;
-      box-shadow: var(--shadow-sm);
-    }
-
-    summary {
-      cursor: pointer;
-      padding: var(--s-5, 20px) var(--s-6);
-      color: var(--c-text-dark);
-      font-weight: 800;
-      list-style: none;
-    }
-
-    summary::-webkit-details-marker { display: none; }
-    details p { padding: 0 var(--s-6) var(--s-6); color: var(--c-muted-dark); }
-
-    .final-cta {
-      padding: var(--s-24) 0;
-      text-align: center;
-      background: linear-gradient(135deg, rgba(99,102,241,0.30), rgba(168,85,247,0.14)), var(--c-bg);
-    }
-
-    .final-cta .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--s-6);
-    }
-
-    .final-cta h2 { max-width: 14ch; margin-inline: auto; }
-    .final-cta p { color: var(--c-muted); margin-inline: auto; }
-
-    .tweaks {
-      position: fixed;
-      right: var(--s-4);
-      bottom: var(--s-4);
-      z-index: 50;
-      display: none;
-      width: min(320px, calc(100vw - 32px));
-      padding: var(--s-4);
-      border: 1px solid rgba(15,23,42,0.12);
-      border-radius: var(--r-lg);
-      color: var(--c-text-dark);
-      background: rgba(255,255,255,0.94);
-      box-shadow: var(--shadow-lg);
-      backdrop-filter: blur(16px);
-    }
-
-    body.editing .tweaks { display: grid; gap: var(--s-4); }
-    .tweaks h2 { font-size: var(--t-lg); max-width: none; letter-spacing: -0.02em; }
-    .tweak-field { display: grid; gap: var(--s-2); color: #334155; font-size: var(--t-sm); }
-    .tweak-field input[type="color"] { width: 100%; height: 38px; border: 1px solid rgba(15,23,42,0.12); border-radius: var(--r-sm); background: #fff; }
-    .tweak-field select { min-height: 38px; padding: 0 var(--s-3); border: 1px solid rgba(15,23,42,0.12); border-radius: var(--r-sm); background: #fff; }
-    .tweak-inline { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
-
-    @media (min-width: 768px) {
-      .nav-pills { display: flex; }
-      .hero-grid { grid-template-columns: 1.12fr 0.88fr; }
-      .section-head { grid-template-columns: 0.9fr 1.1fr; }
-      .bento { grid-template-columns: repeat(4, 1fr); }
-      .info-card.large { grid-column: span 2; grid-row: span 2; }
-      .info-card.medium { grid-column: span 2; }
-      .info-card.small { grid-column: span 1; }
-      .check-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    @media (max-width: 640px) {
-      .container { padding-inline: var(--s-4); }
-      .hero { padding-top: var(--s-16); }
-      .setup-step { grid-template-columns: 1fr; gap: var(--s-4); }
-      h1 { max-width: 9ch; }
-      .terminal-top { align-items: flex-start; flex-direction: column; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
+    <style>
+      /* ── Reset ─────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-    }
-  </style>
-</head>
-<body>
-  <div class="page-shell">
-    <header class="topbar">
-      <div class="container topbar-inner">
-        <a class="brand" href="#top" aria-label="回到页面顶部">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"></path><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15Z"></path></svg>
-          </span>
-          <span>AI 样式调试配置</span>
-        </a>
-        <nav class="nav-pills" aria-label="页面导航">
-          <a href="#steps">三步接入</a>
-          <a href="#config">配置项</a>
-          <a href="#safety">安全边界</a>
-          <a href="#faq">FAQ</a>
-        </nav>
-      </div>
-    </header>
+      html {
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
+      }
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
+      }
+      body {
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      img,
+      picture,
+      video,
+      svg {
+        display: block;
+        max-width: 100%;
+      }
+      input,
+      button,
+      textarea,
+      select {
+        font: inherit;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button {
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
 
-    <main id="top">
-      <section class="hero">
-        <div class="container hero-grid">
-          <div class="hero-copy">
-            <span class="eyebrow label"><span class="eyebrow-dot" aria-hidden="true"></span>本地开发专用工具</span>
-            <h1>让同事也能点选页面直接改样式</h1>
-            <p class="hero-subtitle">复制一个插件目录，改一段 Vite 配置，运行 test 模式。浏览器点选区域后，Claude Code 会按项目规则修改源码，并通过热更新看到效果。</p>
-            <div class="hero-actions">
-              <a class="btn btn-primary" href="#steps">开始配置</a>
-              <a class="btn btn-secondary" href="#config">查看可选参数</a>
-            </div>
-          </div>
+      /* ── Design Tokens ─────────────────────────────── */
+      :root {
+        --c-bg: #070812;
+        --c-surface: #101323;
+        --c-panel: #ffffff;
+        --c-panel-2: #f7f8ff;
+        --c-border: rgba(255, 255, 255, 0.1);
+        --c-line: rgba(99, 102, 241, 0.18);
+        --c-text: #f8fafc;
+        --c-text-dark: #111827;
+        --c-muted: rgba(248, 250, 252, 0.68);
+        --c-muted-dark: #64748b;
+        --c-accent: #6366f1;
+        --c-accent-h: #4f46e5;
+        --c-accent-soft: rgba(99, 102, 241, 0.12);
+        --c-good: #14b8a6;
+        --c-warn: #f59e0b;
 
-          <aside class="terminal-card" aria-label="AI 样式调试执行流程">
-            <div class="terminal-top">
-              <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
-              <span>pnpm run test → browser overlay → claude</span>
-            </div>
-            <div class="flow-board">
-              <div class="flow-step">
-                <div class="flow-number">1</div>
-                <div><strong>浏览器点选区域</strong><span>悬浮按钮进入选区模式，自动采集 DOM、路由和 Vue 组件文件。</span></div>
-              </div>
-              <div class="flow-step">
-                <div class="flow-number">2</div>
-                <div><strong>输入样式要求</strong><span>在悬浮面板里描述目标效果，例如“按钮更醒目，卡片更轻盈”。</span></div>
-              </div>
-              <div class="flow-step">
-                <div class="flow-number">3</div>
-                <div><strong>Claude Code 修改源码</strong><span>Vite 中间件在本地触发 Claude，只允许在启用模式下工作。</span></div>
-              </div>
-              <div class="flow-step">
-                <div class="flow-number">4</div>
-                <div><strong>页面热更新查看</strong><span>源码保存后由 Vite HMR 展示效果，不需要同事手动找组件。</span></div>
-              </div>
-            </div>
-          </aside>
+        --f-headline: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
+          sans-serif;
+        --f-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
+          sans-serif;
+        --f-code: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+        --t-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+        --t-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+        --t-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+        --t-lg: clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
+        --t-xl: clamp(1.375rem, 1.1rem + 1.3vw, 2rem);
+        --t-2xl: clamp(1.875rem, 1.4rem + 2.4vw, 3rem);
+        --t-3xl: clamp(2.5rem, 1.8rem + 3.5vw, 4.5rem);
+        --t-4xl: clamp(3.5rem, 2.5rem + 5vw, 7rem);
+
+        --s-1: 4px;
+        --s-2: 8px;
+        --s-3: 12px;
+        --s-4: 16px;
+        --s-6: 24px;
+        --s-8: 32px;
+        --s-12: 48px;
+        --s-16: 64px;
+        --s-24: 96px;
+        --s-32: 128px;
+
+        --r-sm: 8px;
+        --r-md: 14px;
+        --r-lg: 24px;
+        --r-xl: 32px;
+        --r-full: 9999px;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 14px 34px rgba(17, 24, 39, 0.14);
+        --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.36);
+
+        --ease-out: cubic-bezier(0, 0, 0.2, 1);
+        --ease-in: cubic-bezier(0.4, 0, 1, 1);
+        --ease: cubic-bezier(0.4, 0, 0.2, 1);
+        --dur-fast: 120ms;
+        --dur-base: 220ms;
+        --dur-slow: 380ms;
+      }
+
+      body {
+        font-family: var(--f-body);
+        color: var(--c-text);
+        background: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          radial-gradient(circle at 78% 10%, rgba(99, 102, 241, 0.4), transparent 34%),
+          radial-gradient(circle at 12% 18%, rgba(20, 184, 166, 0.18), transparent 30%), var(--c-bg);
+        background-size: 42px 42px, 42px 42px, auto, auto, auto;
+      }
+
+      body.compact {
+        --s-8: 24px;
+        --s-12: 36px;
+        --s-16: 48px;
+        --s-24: 72px;
+      }
+
+      body.hide-checklist .checklist-section {
+        display: none;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: var(--f-headline);
+        letter-spacing: -0.04em;
+      }
+      h1 {
+        font-size: var(--t-4xl);
+        font-weight: 900;
+        line-height: 0.96;
+        max-width: 10ch;
+      }
+      h2 {
+        font-size: var(--t-3xl);
+        font-weight: 850;
+        line-height: 1.05;
+        max-width: 13ch;
+      }
+      h3 {
+        font-size: var(--t-xl);
+        font-weight: 800;
+        line-height: 1.15;
+        color: var(--c-text-dark);
+      }
+      p {
+        font-size: var(--t-base);
+        line-height: 1.72;
+        max-width: 65ch;
+      }
+      small,
+      .label {
+        font-size: var(--t-xs);
+        line-height: 1.4;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--c-accent);
+        outline-offset: 3px;
+        border-radius: var(--r-sm);
+      }
+      :focus:not(:focus-visible) {
+        outline: none;
+      }
+
+      .page-shell {
+        width: 100%;
+      }
+      .container {
+        width: 100%;
+        max-width: 1180px;
+        margin-inline: auto;
+        padding-inline: var(--s-6);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 1px solid var(--c-border);
+        background: rgba(7, 8, 18, 0.82);
+        backdrop-filter: blur(18px);
+      }
+
+      .topbar-inner {
+        display: flex;
+        min-height: 68px;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s-4);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--s-3);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--c-accent), #a855f7);
+        box-shadow: 0 12px 30px rgba(99, 102, 241, 0.36);
+      }
+
+      .brand-mark svg {
+        width: 19px;
+        height: 19px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 2;
+      }
+
+      .nav-pills {
+        display: none;
+        align-items: center;
+        gap: var(--s-2);
+        color: var(--c-muted);
+        font-size: var(--t-sm);
+      }
+
+      .nav-pills a {
+        padding: var(--s-2) var(--s-3);
+        border-radius: var(--r-full);
+        transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+      }
+
+      .nav-pills a:hover {
+        color: var(--c-text);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .hero {
+        padding: var(--s-24) 0 var(--s-16);
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--s-12);
+        align-items: center;
+      }
+
+      .hero-copy {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--s-6);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--s-2);
+        padding: var(--s-2) var(--s-4);
+        color: #c7d2fe;
+        background: rgba(99, 102, 241, 0.13);
+        border: 1px solid rgba(165, 180, 252, 0.22);
+        border-radius: var(--r-full);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .eyebrow-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: var(--r-full);
+        background: var(--c-good);
+        box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.14);
+      }
+
+      .hero-subtitle {
+        color: var(--c-muted);
+        font-size: var(--t-lg);
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--s-3);
+        align-items: center;
+      }
+
+      .btn {
+        display: inline-flex;
+        min-height: 46px;
+        align-items: center;
+        justify-content: center;
+        gap: var(--s-2);
+        padding: var(--s-3) var(--s-6);
+        border-radius: var(--r-full);
+        font-size: var(--t-sm);
+        font-weight: 750;
+        white-space: nowrap;
+        align-self: flex-start;
+        transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+          background var(--dur-fast) var(--ease);
+      }
+
+      .btn-primary {
+        color: #fff;
+        background: var(--c-accent);
+        box-shadow: 0 18px 42px rgba(99, 102, 241, 0.35);
+      }
+
+      .btn-primary:hover {
+        background: var(--c-accent-h);
+        transform: translateY(-1px);
+        box-shadow: 0 22px 54px rgba(99, 102, 241, 0.45);
+      }
+      .btn-secondary {
+        color: var(--c-text);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--c-border);
+      }
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-1px);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .terminal-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--r-xl);
+        background: linear-gradient(145deg, rgba(16, 19, 35, 0.96), rgba(17, 24, 39, 0.72));
+        box-shadow: var(--shadow-lg);
+      }
+
+      .terminal-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s-4);
+        padding: var(--s-4) var(--s-6);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--c-muted);
+        font-size: var(--t-sm);
+      }
+
+      .traffic {
+        display: flex;
+        gap: var(--s-2);
+      }
+      .traffic span {
+        width: 10px;
+        height: 10px;
+        border-radius: var(--r-full);
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .traffic span:nth-child(1) {
+        background: #fb7185;
+      }
+      .traffic span:nth-child(2) {
+        background: #fbbf24;
+      }
+      .traffic span:nth-child(3) {
+        background: #34d399;
+      }
+
+      .flow-board {
+        display: grid;
+        gap: var(--s-4);
+        padding: var(--s-6);
+      }
+
+      .flow-step {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: var(--s-4);
+        align-items: start;
+        padding: var(--s-4);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.055);
+      }
+
+      .flow-number {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 16px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--c-accent), #a855f7);
+        font-weight: 900;
+      }
+
+      .flow-step strong {
+        display: block;
+        margin-bottom: var(--s-1);
+        color: #fff;
+      }
+      .flow-step span {
+        color: var(--c-muted);
+        font-size: var(--t-sm);
+      }
+
+      .section {
+        padding: var(--s-16) 0;
+      }
+
+      .section-light {
+        color: var(--c-text-dark);
+        background: var(--c-panel);
+      }
+
+      .section-muted {
+        color: var(--c-text-dark);
+        background: var(--c-panel-2);
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--s-6);
+        margin-bottom: var(--s-12);
+        align-items: end;
+      }
+
+      .section-head p {
+        color: var(--c-muted-dark);
+      }
+      .section-label {
+        color: var(--c-accent);
+        font-weight: 800;
+        margin-bottom: var(--s-3);
+      }
+
+      .step-list {
+        display: grid;
+        gap: var(--s-2);
+      }
+
+      .setup-step {
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        gap: var(--s-6);
+        padding: var(--s-8) 0;
+        border-top: 1px solid rgba(15, 23, 42, 0.1);
+      }
+
+      .setup-step:last-child {
+        border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+      }
+
+      .setup-num {
+        font-size: var(--t-2xl);
+        font-weight: 900;
+        line-height: 1;
+        color: var(--c-accent);
+        opacity: 0.45;
+      }
+
+      .setup-content {
+        display: grid;
+        gap: var(--s-4);
+      }
+
+      .setup-content p {
+        color: var(--c-muted-dark);
+      }
+
+      .code-card {
+        overflow: hidden;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: var(--r-lg);
+        background: #0b1020;
+        box-shadow: var(--shadow-md);
+      }
+
+      .code-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s-4);
+        padding: var(--s-3) var(--s-4);
+        color: #cbd5e1;
+        background: rgba(255, 255, 255, 0.04);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: var(--t-xs);
+      }
+
+      .copy-btn {
+        display: inline-flex;
+        min-height: 32px;
+        align-items: center;
+        padding: var(--s-1) var(--s-3);
+        border-radius: var(--r-full);
+        color: #e0e7ff;
+        background: rgba(99, 102, 241, 0.18);
+        border: 1px solid rgba(129, 140, 248, 0.28);
+        font-size: var(--t-xs);
+        transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+      }
+
+      .copy-btn:hover {
+        background: rgba(99, 102, 241, 0.28);
+        transform: translateY(-1px);
+      }
+
+      pre {
+        overflow-x: auto;
+        padding: var(--s-5, 20px) var(--s-4);
+        color: #dbeafe;
+        font-family: var(--f-code);
+        font-size: 0.88rem;
+        line-height: 1.72;
+      }
+
+      .token-accent {
+        color: #a5b4fc;
+      }
+      .token-good {
+        color: #5eead4;
+      }
+      .token-warn {
+        color: #fcd34d;
+      }
+
+      .bento {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--s-4);
+      }
+
+      .info-card {
+        min-height: 180px;
+        padding: var(--s-8);
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: var(--r-lg);
+        background: #fff;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .info-card.large {
+        background: linear-gradient(135deg, #eef2ff, #ffffff 64%);
+      }
+      .info-card p {
+        margin-top: var(--s-4);
+        color: var(--c-muted-dark);
+      }
+
+      .stat-panel {
+        display: grid;
+        gap: var(--s-6);
+        padding: var(--s-8);
+        border-radius: var(--r-xl);
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(20, 184, 166, 0.1));
+        border: 1px solid rgba(99, 102, 241, 0.18);
+      }
+
+      .stat-row {
+        display: grid;
+        gap: var(--s-2);
+      }
+      .stat-top {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--s-4);
+        color: var(--c-text-dark);
+        font-weight: 800;
+      }
+      .stat-track {
+        height: 8px;
+        overflow: hidden;
+        border-radius: var(--r-full);
+        background: rgba(15, 23, 42, 0.1);
+      }
+      .stat-fill {
+        height: 100%;
+        border-radius: var(--r-full);
+        background: var(--c-accent);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: var(--r-lg);
+        background: #fff;
+        box-shadow: var(--shadow-sm);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+      }
+      th,
+      td {
+        padding: var(--s-4);
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+      }
+      th {
+        color: #334155;
+        background: #f8fafc;
+        font-size: var(--t-sm);
+      }
+      td {
+        color: #475569;
+        font-size: var(--t-sm);
+      }
+      td code,
+      th code {
+        font-family: var(--f-code);
+        color: var(--c-accent-h);
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .check-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--s-4);
+      }
+
+      .check-item {
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        gap: var(--s-4);
+        padding: var(--s-5, 20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--r-lg);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .check-icon {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border-radius: 13px;
+        background: rgba(20, 184, 166, 0.14);
+      }
+
+      .check-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: #5eead4;
+        stroke-width: 2.4;
+        fill: none;
+      }
+      .check-item strong {
+        display: block;
+        margin-bottom: var(--s-1);
+      }
+      .check-item span {
+        color: var(--c-muted);
+        font-size: var(--t-sm);
+      }
+
+      .faq-list {
+        display: grid;
+        gap: var(--s-4);
+      }
+
+      details {
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: var(--r-lg);
+        background: #fff;
+        box-shadow: var(--shadow-sm);
+      }
+
+      summary {
+        cursor: pointer;
+        padding: var(--s-5, 20px) var(--s-6);
+        color: var(--c-text-dark);
+        font-weight: 800;
+        list-style: none;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      details p {
+        padding: 0 var(--s-6) var(--s-6);
+        color: var(--c-muted-dark);
+      }
+
+      .final-cta {
+        padding: var(--s-24) 0;
+        text-align: center;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.14)), var(--c-bg);
+      }
+
+      .final-cta .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--s-6);
+      }
+
+      .final-cta h2 {
+        max-width: 14ch;
+        margin-inline: auto;
+      }
+      .final-cta p {
+        color: var(--c-muted);
+        margin-inline: auto;
+      }
+
+      .tweaks {
+        position: fixed;
+        right: var(--s-4);
+        bottom: var(--s-4);
+        z-index: 50;
+        display: none;
+        width: min(320px, calc(100vw - 32px));
+        padding: var(--s-4);
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-radius: var(--r-lg);
+        color: var(--c-text-dark);
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(16px);
+      }
+
+      body.editing .tweaks {
+        display: grid;
+        gap: var(--s-4);
+      }
+      .tweaks h2 {
+        font-size: var(--t-lg);
+        max-width: none;
+        letter-spacing: -0.02em;
+      }
+      .tweak-field {
+        display: grid;
+        gap: var(--s-2);
+        color: #334155;
+        font-size: var(--t-sm);
+      }
+      .tweak-field input[type='color'] {
+        width: 100%;
+        height: 38px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-radius: var(--r-sm);
+        background: #fff;
+      }
+      .tweak-field select {
+        min-height: 38px;
+        padding: 0 var(--s-3);
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-radius: var(--r-sm);
+        background: #fff;
+      }
+      .tweak-inline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s-3);
+      }
+
+      @media (min-width: 768px) {
+        .nav-pills {
+          display: flex;
+        }
+        .hero-grid {
+          grid-template-columns: 1.12fr 0.88fr;
+        }
+        .section-head {
+          grid-template-columns: 0.9fr 1.1fr;
+        }
+        .bento {
+          grid-template-columns: repeat(4, 1fr);
+        }
+        .info-card.large {
+          grid-column: span 2;
+          grid-row: span 2;
+        }
+        .info-card.medium {
+          grid-column: span 2;
+        }
+        .info-card.small {
+          grid-column: span 1;
+        }
+        .check-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          padding-inline: var(--s-4);
+        }
+        .hero {
+          padding-top: var(--s-16);
+        }
+        .setup-step {
+          grid-template-columns: 1fr;
+          gap: var(--s-4);
+        }
+        h1 {
+          max-width: 9ch;
+        }
+        .terminal-top {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="container topbar-inner">
+          <a class="brand" href="#top" aria-label="回到页面顶部">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"></path>
+                <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15Z"></path>
+              </svg>
+            </span>
+            <span>AI 样式调试配置</span>
+          </a>
+          <nav class="nav-pills" aria-label="页面导航">
+            <a href="#steps">三步接入</a>
+            <a href="#config">配置项</a>
+            <a href="#safety">安全边界</a>
+            <a href="#faq">FAQ</a>
+          </nav>
         </div>
-      </section>
+      </header>
 
-      <section class="section section-light" id="steps">
-        <div class="container">
-          <div class="section-head">
-            <div>
-              <div class="section-label label">Quick setup</div>
-              <h2>三步接入其他 Vite 项目</h2>
+      <main id="top">
+        <section class="hero">
+          <div class="container hero-grid">
+            <div class="hero-copy">
+              <span class="eyebrow label"><span class="eyebrow-dot" aria-hidden="true"></span>本地开发专用工具</span>
+              <h1>让同事也能点选页面直接改样式</h1>
+              <p class="hero-subtitle">
+                复制一个插件目录，改一段 Vite 配置，运行 test 模式。浏览器点选区域后，Claude Code
+                会按项目规则修改源码，并通过热更新看到效果。
+              </p>
+              <div class="hero-actions">
+                <a class="btn btn-primary" href="#steps">开始配置</a>
+                <a class="btn btn-secondary" href="#config">查看可选参数</a>
+              </div>
             </div>
-            <p>目标项目需要是 Vite 开发服务，并且同事本机已经安装、登录 Claude Code。插件默认只在 <code>mode === 'test'</code> 时注入前端工具。</p>
-          </div>
 
-          <div class="step-list">
-            <article class="setup-step">
-              <div class="setup-num">01</div>
-              <div class="setup-content">
-                <h3>复制插件目录</h3>
-                <p>把当前项目里的整个目录复制到目标项目，路径保持一致最省事。</p>
-                <div class="code-card">
-                  <div class="code-head"><span>需要复制</span><button class="copy-btn" data-copy-target="copy-tree">复制</button></div>
-                  <pre><code id="copy-tree">tools/ai-style-editor/</code></pre>
+            <aside class="terminal-card" aria-label="AI 样式调试执行流程">
+              <div class="terminal-top">
+                <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+                <span>pnpm run test → browser overlay → claude</span>
+              </div>
+              <div class="flow-board">
+                <div class="flow-step">
+                  <div class="flow-number">1</div>
+                  <div>
+                    <strong>浏览器点选区域</strong
+                    ><span>悬浮按钮进入选区模式，自动采集 DOM、路由和 Vue 组件文件。</span>
+                  </div>
+                </div>
+                <div class="flow-step">
+                  <div class="flow-number">2</div>
+                  <div>
+                    <strong>输入样式要求</strong><span>在悬浮面板里描述目标效果，例如“按钮更醒目，卡片更轻盈”。</span>
+                  </div>
+                </div>
+                <div class="flow-step">
+                  <div class="flow-number">3</div>
+                  <div>
+                    <strong>Claude Code 修改源码</strong
+                    ><span>Vite 中间件在本地触发 Claude，只允许在启用模式下工作。</span>
+                  </div>
+                </div>
+                <div class="flow-step">
+                  <div class="flow-number">4</div>
+                  <div>
+                    <strong>页面热更新查看</strong><span>源码保存后由 Vite HMR 展示效果，不需要同事手动找组件。</span>
+                  </div>
                 </div>
               </div>
-            </article>
+            </aside>
+          </div>
+        </section>
 
-            <article class="setup-step">
-              <div class="setup-num">02</div>
-              <div class="setup-content">
-                <h3>在 vite.config.ts 引入插件</h3>
-                <p>把插件放进 <code>plugins</code> 数组，并按项目补充规则。规则越具体，AI 越不容易改错范围。</p>
-                <div class="code-card">
-                  <div class="code-head"><span>vite.config.ts</span><button class="copy-btn" data-copy-target="vite-config">复制</button></div>
-                  <pre><code id="vite-config">import { defineConfig } from 'vite'
+        <section class="section section-light" id="steps">
+          <div class="container">
+            <div class="section-head">
+              <div>
+                <div class="section-label label">Quick setup</div>
+                <h2>三步接入其他 Vite 项目</h2>
+              </div>
+              <p>
+                目标项目需要是 Vite 开发服务，并且同事本机已经安装、登录 Claude Code。插件默认只在
+                <code>mode === 'test'</code> 时注入前端工具。
+              </p>
+            </div>
+
+            <div class="step-list">
+              <article class="setup-step">
+                <div class="setup-num">01</div>
+                <div class="setup-content">
+                  <h3>复制插件目录</h3>
+                  <p>把当前项目里的整个目录复制到目标项目，路径保持一致最省事。</p>
+                  <div class="code-card">
+                    <div class="code-head">
+                      <span>需要复制</span><button class="copy-btn" data-copy-target="copy-tree">复制</button>
+                    </div>
+                    <pre><code id="copy-tree">tools/ai-style-editor/</code></pre>
+                  </div>
+                </div>
+              </article>
+
+              <article class="setup-step">
+                <div class="setup-num">02</div>
+                <div class="setup-content">
+                  <h3>在 vite.config.ts 引入插件</h3>
+                  <p>把插件放进 <code>plugins</code> 数组，并按项目补充规则。规则越具体，AI 越不容易改错范围。</p>
+                  <div class="code-card">
+                    <div class="code-head">
+                      <span>vite.config.ts</span><button class="copy-btn" data-copy-target="vite-config">复制</button>
+                    </div>
+                    <pre><code id="vite-config">import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { dtAiStyleEditorPlugin } from './tools/ai-style-editor'
 
@@ -677,280 +980,357 @@ export default defineConfig(({ mode }) =&gt; ({
     })
   ]
 }))</code></pre>
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
 
-            <article class="setup-step">
-              <div class="setup-num">03</div>
-              <div class="setup-content">
-                <h3>增加 test 模式启动脚本</h3>
-                <p>同事只需要运行这个脚本。普通 <code>pnpm dev</code> 不会注入 AI 样式调试按钮。</p>
-                <div class="code-card">
-                  <div class="code-head"><span>package.json</span><button class="copy-btn" data-copy-target="package-script">复制</button></div>
-                  <pre><code id="package-script">{
+              <article class="setup-step">
+                <div class="setup-num">03</div>
+                <div class="setup-content">
+                  <h3>增加 test 模式启动脚本</h3>
+                  <p>同事只需要运行这个脚本。普通 <code>pnpm dev</code> 不会注入 AI 样式调试按钮。</p>
+                  <div class="code-card">
+                    <div class="code-head">
+                      <span>package.json</span><button class="copy-btn" data-copy-target="package-script">复制</button>
+                    </div>
+                    <pre><code id="package-script">{
   "scripts": {
     "test": "vite --host 0.0.0.0 --mode test"
   }
 }</code></pre>
+                  </div>
+                  <div class="code-card">
+                    <div class="code-head">
+                      <span>启动命令</span><button class="copy-btn" data-copy-target="run-command">复制</button>
+                    </div>
+                    <pre><code id="run-command">pnpm run test</code></pre>
+                  </div>
                 </div>
-                <div class="code-card">
-                  <div class="code-head"><span>启动命令</span><button class="copy-btn" data-copy-target="run-command">复制</button></div>
-                  <pre><code id="run-command">pnpm run test</code></pre>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section-muted">
+          <div class="container">
+            <div class="section-head">
+              <div>
+                <div class="section-label label">Team handoff</div>
+                <h2>发给同事前确认这几件事</h2>
+              </div>
+              <div class="stat-panel" aria-label="接入条件完成度示意">
+                <div class="stat-row">
+                  <div class="stat-top"><span>复制插件目录</span><span>必需</span></div>
+                  <div class="stat-track"><div class="stat-fill" style="width: 100%"></div></div>
+                </div>
+                <div class="stat-row">
+                  <div class="stat-top"><span>Claude Code 可执行</span><span>必需</span></div>
+                  <div class="stat-track"><div class="stat-fill" style="width: 100%"></div></div>
+                </div>
+                <div class="stat-row">
+                  <div class="stat-top"><span>项目规则写清楚</span><span>建议</span></div>
+                  <div class="stat-track"><div class="stat-fill" style="width: 82%"></div></div>
                 </div>
               </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section section-muted">
-        <div class="container">
-          <div class="section-head">
-            <div>
-              <div class="section-label label">Team handoff</div>
-              <h2>发给同事前确认这几件事</h2>
             </div>
-            <div class="stat-panel" aria-label="接入条件完成度示意">
-              <div class="stat-row">
-                <div class="stat-top"><span>复制插件目录</span><span>必需</span></div>
-                <div class="stat-track"><div class="stat-fill" style="width:100%"></div></div>
+
+            <div class="bento">
+              <article class="info-card large">
+                <h3>本机必须能运行 Claude Code</h3>
+                <p>
+                  同事需要先安装并登录 Claude Code，确保终端里执行
+                  <code>claude</code> 不报错。插件只是帮浏览器把样式修改请求转成 Claude Code 命令，不会自带账号能力。
+                </p>
+              </article>
+              <article class="info-card medium">
+                <h3>只给 test 模式使用</h3>
+                <p>默认配置是 <code>enabled: mode === 'test'</code>。生产构建不会注入按钮，普通 dev 也不会显示。</p>
+              </article>
+              <article class="info-card small">
+                <h3>先改规则</h3>
+                <p>把 Tailwind、UI 库限制、图片规范、禁止目录写进 <code>projectRules</code>。</p>
+              </article>
+              <article class="info-card small">
+                <h3>先备份代码</h3>
+                <p>建议同事在 Git 分支里使用，方便查看 diff 和回退。</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section-light" id="config">
+          <div class="container">
+            <div class="section-head">
+              <div>
+                <div class="section-label label">Options</div>
+                <h2>常用配置项</h2>
               </div>
-              <div class="stat-row">
-                <div class="stat-top"><span>Claude Code 可执行</span><span>必需</span></div>
-                <div class="stat-track"><div class="stat-fill" style="width:100%"></div></div>
+              <p>
+                大多数项目只需要配置 <code>enabled</code>、<code>projectName</code> 和
+                <code>projectRules</code>。其他参数用于改 endpoint、源码目录、允许文件类型和 Claude 命令。
+              </p>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>参数</th>
+                    <th>默认值</th>
+                    <th>用途</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>enabled</code></td>
+                    <td><code>config.mode === 'test'</code></td>
+                    <td>控制是否注入浏览器按钮和启用本地接口。</td>
+                  </tr>
+                  <tr>
+                    <td><code>projectName</code></td>
+                    <td><code>当前项目</code></td>
+                    <td>出现在 AI prompt 里，帮助 Claude Code 理解项目。</td>
+                  </tr>
+                  <tr>
+                    <td><code>projectRules</code></td>
+                    <td>通用前端样式规范</td>
+                    <td>写项目硬约束，例如 Tailwind 优先、禁止改业务逻辑。</td>
+                  </tr>
+                  <tr>
+                    <td><code>sourceRoot</code></td>
+                    <td><code>src</code></td>
+                    <td>限制源码定位范围，其他目录会被忽略。</td>
+                  </tr>
+                  <tr>
+                    <td><code>allowedExtensions</code></td>
+                    <td><code>['.vue']</code></td>
+                    <td>限制可定位的组件文件类型。</td>
+                  </tr>
+                  <tr>
+                    <td><code>protectedPaths</code></td>
+                    <td><code>router / stores / apis / mock</code></td>
+                    <td>写进 prompt，提醒 AI 不要修改这些路径。</td>
+                  </tr>
+                  <tr>
+                    <td><code>command</code></td>
+                    <td><code>claude</code></td>
+                    <td>Claude Code 命令名。如果同事用自定义别名，可以在这里改。</td>
+                  </tr>
+                  <tr>
+                    <td><code>permissionMode</code></td>
+                    <td><code>acceptEdits</code></td>
+                    <td>传给 Claude Code 的权限模式。</td>
+                  </tr>
+                  <tr>
+                    <td><code>requireComponentFile</code></td>
+                    <td><code>true</code></td>
+                    <td>要求必须定位到组件文件，减少误改范围。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="section checklist-section" id="safety">
+          <div class="container">
+            <div class="section-head">
+              <div>
+                <div class="section-label label">Safety boundary</div>
+                <h2>默认安全边界</h2>
               </div>
-              <div class="stat-row">
-                <div class="stat-top"><span>项目规则写清楚</span><span>建议</span></div>
-                <div class="stat-track"><div class="stat-fill" style="width:82%"></div></div>
+              <p>这个工具是本地开发效率工具，不是线上能力。它的设计目标是让样式改动更快，同时把可执行范围压到最低。</p>
+            </div>
+
+            <div class="check-grid">
+              <article class="check-item">
+                <span class="check-icon" aria-hidden="true"
+                  ><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg
+                ></span>
+                <div>
+                  <strong>只在启用模式注入</strong><span>当前配置只允许 test 模式显示悬浮按钮和调用接口。</span>
+                </div>
+              </article>
+              <article class="check-item">
+                <span class="check-icon" aria-hidden="true"
+                  ><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg
+                ></span>
+                <div>
+                  <strong>生产构建无残留</strong><span>插件只作用于 Vite serve，不进入 production build。</span>
+                </div>
+              </article>
+              <article class="check-item">
+                <span class="check-icon" aria-hidden="true"
+                  ><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg
+                ></span>
+                <div>
+                  <strong>浏览器不传命令</strong><span>后端固定调用 Claude Code，用户输入只作为样式要求。</span>
+                </div>
+              </article>
+              <article class="check-item">
+                <span class="check-icon" aria-hidden="true"
+                  ><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg
+                ></span>
+                <div>
+                  <strong>限制源码定位</strong><span>组件文件路径必须落在 sourceRoot 且扩展名在允许列表内。</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section-light" id="faq">
+          <div class="container">
+            <div class="section-head">
+              <div>
+                <div class="section-label label">FAQ</div>
+                <h2>接入时最常见的问题</h2>
               </div>
+              <p>如果按钮没出现，优先检查启动模式和 vite.config.ts。接口返回 403 通常说明当前不是启用模式。</p>
+            </div>
+
+            <div class="faq-list">
+              <details open>
+                <summary>为什么我运行 pnpm dev 没有按钮？</summary>
+                <p>
+                  这是预期行为。当前建议只在 <code>pnpm run test</code> 的
+                  <code>mode === 'test'</code> 中启用，避免普通开发或生产环境误触发。
+                </p>
+              </details>
+              <details>
+                <summary>其他项目不是 Vue 可以用吗？</summary>
+                <p>
+                  可以作为 Vite 插件接入，但当前浏览器端源码定位主要依赖 Vue 组件实例信息。React 或普通 HTML
+                  项目需要调整客户端里的组件文件定位逻辑。
+                </p>
+              </details>
+              <details>
+                <summary>能不能让 AI 改多个文件？</summary>
+                <p>
+                  可以，但建议让
+                  <code>projectRules</code>
+                  写清楚“优先修改选中元素附近结构”。这个工具的优势是小范围样式调试，不建议让它做大重构。
+                </p>
+              </details>
+              <details>
+                <summary>同事没有 Claude Code 账号怎么办？</summary>
+                <p>
+                  这个方案是本机 Claude Code bridge。同事需要自己安装并登录 Claude Code，否则后端无法启动
+                  <code>claude</code> 命令。
+                </p>
+              </details>
             </div>
           </div>
+        </section>
 
-          <div class="bento">
-            <article class="info-card large">
-              <h3>本机必须能运行 Claude Code</h3>
-              <p>同事需要先安装并登录 Claude Code，确保终端里执行 <code>claude</code> 不报错。插件只是帮浏览器把样式修改请求转成 Claude Code 命令，不会自带账号能力。</p>
-            </article>
-            <article class="info-card medium">
-              <h3>只给 test 模式使用</h3>
-              <p>默认配置是 <code>enabled: mode === 'test'</code>。生产构建不会注入按钮，普通 dev 也不会显示。</p>
-            </article>
-            <article class="info-card small">
-              <h3>先改规则</h3>
-              <p>把 Tailwind、UI 库限制、图片规范、禁止目录写进 <code>projectRules</code>。</p>
-            </article>
-            <article class="info-card small">
-              <h3>先备份代码</h3>
-              <p>建议同事在 Git 分支里使用，方便查看 diff 和回退。</p>
-            </article>
+        <section class="final-cta">
+          <div class="container">
+            <div class="section-label label">Ready</div>
+            <h2>复制目录，接入配置，运行 test 模式</h2>
+            <p>推荐把这个 HTML 和 <code>tools/ai-style-editor</code> 一起发给同事，让他们先在独立分支里试用。</p>
+            <a class="btn btn-primary" href="#steps">回到接入步骤</a>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
+    </div>
 
-      <section class="section section-light" id="config">
-        <div class="container">
-          <div class="section-head">
-            <div>
-              <div class="section-label label">Options</div>
-              <h2>常用配置项</h2>
-            </div>
-            <p>大多数项目只需要配置 <code>enabled</code>、<code>projectName</code> 和 <code>projectRules</code>。其他参数用于改 endpoint、源码目录、允许文件类型和 Claude 命令。</p>
-          </div>
+    <aside class="tweaks" aria-label="Tweaks">
+      <h2>Tweaks</h2>
+      <label class="tweak-field">
+        Accent color
+        <input id="tweak-accent" type="color" value="#6366f1" />
+      </label>
+      <label class="tweak-field">
+        Density
+        <select id="tweak-density">
+          <option value="comfortable">Comfortable</option>
+          <option value="compact">Compact</option>
+        </select>
+      </label>
+      <label class="tweak-inline">
+        <span>Show safety checklist</span>
+        <input id="tweak-checklist" type="checkbox" checked />
+      </label>
+    </aside>
 
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>参数</th>
-                  <th>默认值</th>
-                  <th>用途</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td><code>enabled</code></td><td><code>config.mode === 'test'</code></td><td>控制是否注入浏览器按钮和启用本地接口。</td></tr>
-                <tr><td><code>projectName</code></td><td><code>当前项目</code></td><td>出现在 AI prompt 里，帮助 Claude Code 理解项目。</td></tr>
-                <tr><td><code>projectRules</code></td><td>通用前端样式规范</td><td>写项目硬约束，例如 Tailwind 优先、禁止改业务逻辑。</td></tr>
-                <tr><td><code>sourceRoot</code></td><td><code>src</code></td><td>限制源码定位范围，其他目录会被忽略。</td></tr>
-                <tr><td><code>allowedExtensions</code></td><td><code>['.vue']</code></td><td>限制可定位的组件文件类型。</td></tr>
-                <tr><td><code>protectedPaths</code></td><td><code>router / stores / apis / mock</code></td><td>写进 prompt，提醒 AI 不要修改这些路径。</td></tr>
-                <tr><td><code>command</code></td><td><code>claude</code></td><td>Claude Code 命令名。如果同事用自定义别名，可以在这里改。</td></tr>
-                <tr><td><code>permissionMode</code></td><td><code>acceptEdits</code></td><td>传给 Claude Code 的权限模式。</td></tr>
-                <tr><td><code>requireComponentFile</code></td><td><code>true</code></td><td>要求必须定位到组件文件，减少误改范围。</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+    <script>
+      const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/ {
+        accentColor: '#6366f1',
+        density: 'comfortable',
+        showChecklist: true
+      } /*EDITMODE-END*/
 
-      <section class="section checklist-section" id="safety">
-        <div class="container">
-          <div class="section-head">
-            <div>
-              <div class="section-label label">Safety boundary</div>
-              <h2>默认安全边界</h2>
-            </div>
-            <p>这个工具是本地开发效率工具，不是线上能力。它的设计目标是让样式改动更快，同时把可执行范围压到最低。</p>
-          </div>
+      const tweakState = { ...TWEAK_DEFAULTS }
 
-          <div class="check-grid">
-            <article class="check-item">
-              <span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></span>
-              <div><strong>只在启用模式注入</strong><span>当前配置只允许 test 模式显示悬浮按钮和调用接口。</span></div>
-            </article>
-            <article class="check-item">
-              <span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></span>
-              <div><strong>生产构建无残留</strong><span>插件只作用于 Vite serve，不进入 production build。</span></div>
-            </article>
-            <article class="check-item">
-              <span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></span>
-              <div><strong>浏览器不传命令</strong><span>后端固定调用 Claude Code，用户输入只作为样式要求。</span></div>
-            </article>
-            <article class="check-item">
-              <span class="check-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></span>
-              <div><strong>限制源码定位</strong><span>组件文件路径必须落在 sourceRoot 且扩展名在允许列表内。</span></div>
-            </article>
-          </div>
-        </div>
-      </section>
+      function showTweaks() {
+        document.body.classList.add('editing')
+      }
 
-      <section class="section section-light" id="faq">
-        <div class="container">
-          <div class="section-head">
-            <div>
-              <div class="section-label label">FAQ</div>
-              <h2>接入时最常见的问题</h2>
-            </div>
-            <p>如果按钮没出现，优先检查启动模式和 vite.config.ts。接口返回 403 通常说明当前不是启用模式。</p>
-          </div>
+      function hideTweaks() {
+        document.body.classList.remove('editing')
+      }
 
-          <div class="faq-list">
-            <details open>
-              <summary>为什么我运行 pnpm dev 没有按钮？</summary>
-              <p>这是预期行为。当前建议只在 <code>pnpm run test</code> 的 <code>mode === 'test'</code> 中启用，避免普通开发或生产环境误触发。</p>
-            </details>
-            <details>
-              <summary>其他项目不是 Vue 可以用吗？</summary>
-              <p>可以作为 Vite 插件接入，但当前浏览器端源码定位主要依赖 Vue 组件实例信息。React 或普通 HTML 项目需要调整客户端里的组件文件定位逻辑。</p>
-            </details>
-            <details>
-              <summary>能不能让 AI 改多个文件？</summary>
-              <p>可以，但建议让 <code>projectRules</code> 写清楚“优先修改选中元素附近结构”。这个工具的优势是小范围样式调试，不建议让它做大重构。</p>
-            </details>
-            <details>
-              <summary>同事没有 Claude Code 账号怎么办？</summary>
-              <p>这个方案是本机 Claude Code bridge。同事需要自己安装并登录 Claude Code，否则后端无法启动 <code>claude</code> 命令。</p>
-            </details>
-          </div>
-        </div>
-      </section>
+      function applyTweaks() {
+        document.documentElement.style.setProperty('--c-accent', tweakState.accentColor)
+        document.documentElement.style.setProperty('--c-accent-h', shadeColor(tweakState.accentColor, -12))
+        document.body.classList.toggle('compact', tweakState.density === 'compact')
+        document.body.classList.toggle('hide-checklist', !tweakState.showChecklist)
+      }
 
-      <section class="final-cta">
-        <div class="container">
-          <div class="section-label label">Ready</div>
-          <h2>复制目录，接入配置，运行 test 模式</h2>
-          <p>推荐把这个 HTML 和 <code>tools/ai-style-editor</code> 一起发给同事，让他们先在独立分支里试用。</p>
-          <a class="btn btn-primary" href="#steps">回到接入步骤</a>
-        </div>
-      </section>
-    </main>
-  </div>
+      function setTweak(key, value) {
+        tweakState[key] = value
+        applyTweaks()
+        window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: value } }, '*')
+      }
 
-  <aside class="tweaks" aria-label="Tweaks">
-    <h2>Tweaks</h2>
-    <label class="tweak-field">
-      Accent color
-      <input id="tweak-accent" type="color" value="#6366f1">
-    </label>
-    <label class="tweak-field">
-      Density
-      <select id="tweak-density">
-        <option value="comfortable">Comfortable</option>
-        <option value="compact">Compact</option>
-      </select>
-    </label>
-    <label class="tweak-inline">
-      <span>Show safety checklist</span>
-      <input id="tweak-checklist" type="checkbox" checked>
-    </label>
-  </aside>
+      function shadeColor(hex, percent) {
+        const clean = hex.replace('#', '')
+        const num = parseInt(clean, 16)
+        const amt = Math.round(2.55 * percent)
+        const r = Math.max(0, Math.min(255, (num >> 16) + amt))
+        const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + amt))
+        const b = Math.max(0, Math.min(255, (num & 0x0000ff) + amt))
+        return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`
+      }
 
-  <script>
-    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-      "accentColor": "#6366f1",
-      "density": "comfortable",
-      "showChecklist": true
-    }/*EDITMODE-END*/;
+      window.addEventListener('message', (event) => {
+        if (event.data?.type === '__activate_edit_mode') showTweaks()
+        if (event.data?.type === '__deactivate_edit_mode') hideTweaks()
+      })
 
-    const tweakState = { ...TWEAK_DEFAULTS };
+      window.parent.postMessage({ type: '__edit_mode_available' }, '*')
 
-    function showTweaks() {
-      document.body.classList.add('editing');
-    }
+      document.querySelectorAll('.copy-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const target = document.getElementById(button.dataset.copyTarget || '')
+          if (!target) return
+          const text = target.textContent.trim()
+          try {
+            await navigator.clipboard.writeText(text)
+            const previous = button.textContent
+            button.textContent = '已复制'
+            window.setTimeout(() => {
+              button.textContent = previous
+            }, 1400)
+          } catch {
+            const range = document.createRange()
+            range.selectNodeContents(target)
+            const selection = window.getSelection()
+            selection.removeAllRanges()
+            selection.addRange(range)
+          }
+        })
+      })
 
-    function hideTweaks() {
-      document.body.classList.remove('editing');
-    }
+      const accentInput = document.getElementById('tweak-accent')
+      const densitySelect = document.getElementById('tweak-density')
+      const checklistInput = document.getElementById('tweak-checklist')
 
-    function applyTweaks() {
-      document.documentElement.style.setProperty('--c-accent', tweakState.accentColor);
-      document.documentElement.style.setProperty('--c-accent-h', shadeColor(tweakState.accentColor, -12));
-      document.body.classList.toggle('compact', tweakState.density === 'compact');
-      document.body.classList.toggle('hide-checklist', !tweakState.showChecklist);
-    }
+      accentInput.addEventListener('input', (event) => setTweak('accentColor', event.target.value))
+      densitySelect.addEventListener('change', (event) => setTweak('density', event.target.value))
+      checklistInput.addEventListener('change', (event) => setTweak('showChecklist', event.target.checked))
 
-    function setTweak(key, value) {
-      tweakState[key] = value;
-      applyTweaks();
-      window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: value } }, '*');
-    }
-
-    function shadeColor(hex, percent) {
-      const clean = hex.replace('#', '');
-      const num = parseInt(clean, 16);
-      const amt = Math.round(2.55 * percent);
-      const r = Math.max(0, Math.min(255, (num >> 16) + amt));
-      const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + amt));
-      const b = Math.max(0, Math.min(255, (num & 0x0000ff) + amt));
-      return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
-    }
-
-    window.addEventListener('message', (event) => {
-      if (event.data?.type === '__activate_edit_mode') showTweaks();
-      if (event.data?.type === '__deactivate_edit_mode') hideTweaks();
-    });
-
-    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
-
-    document.querySelectorAll('.copy-btn').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const target = document.getElementById(button.dataset.copyTarget || '');
-        if (!target) return;
-        const text = target.textContent.trim();
-        try {
-          await navigator.clipboard.writeText(text);
-          const previous = button.textContent;
-          button.textContent = '已复制';
-          window.setTimeout(() => { button.textContent = previous; }, 1400);
-        } catch {
-          const range = document.createRange();
-          range.selectNodeContents(target);
-          const selection = window.getSelection();
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      });
-    });
-
-    const accentInput = document.getElementById('tweak-accent');
-    const densitySelect = document.getElementById('tweak-density');
-    const checklistInput = document.getElementById('tweak-checklist');
-
-    accentInput.addEventListener('input', (event) => setTweak('accentColor', event.target.value));
-    densitySelect.addEventListener('change', (event) => setTweak('density', event.target.value));
-    checklistInput.addEventListener('change', (event) => setTweak('showChecklist', event.target.checked));
-
-    applyTweaks();
-  </script>
-</body>
+      applyTweaks()
+    </script>
+  </body>
 </html>
