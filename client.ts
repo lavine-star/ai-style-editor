@@ -21,6 +21,7 @@ const dtPanelViewportMargin = 12
 const dtButtonViewportMargin = 0
 const dtDragClickThreshold = 5
 const dtPanelTouchListenerOptions = { capture: true, passive: false } as const
+const dtToastDuration = 1500
 
 type DtPanelDragState = {
   offsetX: number
@@ -64,6 +65,7 @@ function dtInitAiStyleEditor() {
         </svg>
       </span>
     </button>
+    <div class="dt-ai-style-toast"></div>
     <div class="dt-ai-style-outline"></div>
     <div class="dt-ai-style-tooltip"></div>
     <section class="dt-ai-style-panel" aria-label="AI 样式调试面板">
@@ -120,6 +122,13 @@ function dtHandleButtonClick(event: MouseEvent) {
     return
   }
 
+  // 如果已经在选择模式或面板已打开，点击悬浮球关闭编辑模式
+  if (dtStatus === 'selecting' || dtStatus === 'selected' || dtStatus === 'submitting') {
+    dtCloseEditMode()
+    return
+  }
+
+  // 否则进入选择模式
   dtStartSelecting()
 }
 
@@ -259,6 +268,7 @@ function dtStartSelecting() {
   dtSetMessage('移动鼠标选择页面区域，点击后输入修改要求。')
   dtPanelElement()?.classList.remove('is-open')
   document.body.classList.add('dt-ai-style-selecting')
+  dtShowToast('已进入编辑模式')
 }
 
 function dtHandleMouseMove(event: MouseEvent) {
@@ -282,7 +292,7 @@ function dtHandleDocumentClick(event: MouseEvent) {
 
   dtSelectedContext = dtCollectElementContext(target)
   dtStatus = 'selected'
-  document.body.classList.remove('dt-ai-style-selecting')
+  // 保持 body 的 selecting 类，这样按钮样式保持一致
   dtOpenPanel(dtSelectedContext)
 }
 
@@ -337,6 +347,32 @@ function dtClosePanel() {
   dtStopPanelDrag()
   dtSetMessage('')
 }
+
+function dtCloseEditMode() {
+  dtStatus = 'idle'
+  dtSelectedContext = null
+  document.body.classList.remove('dt-ai-style-selecting')
+  dtOutlineElement()?.classList.remove('is-visible')
+  dtTooltipElement()?.classList.remove('is-visible')
+  dtPanelElement()?.classList.remove('is-open')
+  dtStopPanelDrag()
+  dtSetMessage('')
+  dtShowToast('已关闭编辑模式', true)
+  dtUpdateButtonBadge('编辑')
+}
+
+function dtShowToast(message: string, isExitMode = false) {
+  const toast = dtToastElement()
+  if (!toast) return
+
+  toast.textContent = message
+  toast.className = 'dt-ai-style-toast is-visible' + (isExitMode ? ' is-exit' : '')
+
+  setTimeout(() => {
+    toast.classList.remove('is-visible')
+  }, dtToastDuration)
+}
+
 
 function dtStartPanelMouseDrag(event: MouseEvent) {
   if (event.button !== 0 || dtShouldIgnorePanelDrag(event.target)) return
@@ -650,6 +686,10 @@ function dtTooltipElement() {
   return document.querySelector<HTMLElement>('.dt-ai-style-tooltip')
 }
 
+function dtToastElement() {
+  return document.querySelector<HTMLElement>('.dt-ai-style-toast')
+}
+
 function dtPanelElement() {
   return document.querySelector<HTMLElement>('.dt-ai-style-panel')
 }
@@ -730,7 +770,10 @@ function dtInjectStyle() {
       background: linear-gradient(45deg, #4f46e5, #a855f7);
       box-shadow: 0 18px 36px rgb(99 102 241 / 30%);
       transform: translateZ(0);
-      transition: transform .3s ease;
+      transition: transform .3s ease, background .3s ease;
+    }
+    .dt-ai-style-selecting .dt-ai-style-button-surface {
+      background: linear-gradient(45deg, #14b8a6, #6366f1);
     }
     .dt-ai-style-button:hover .dt-ai-style-button-surface {
       transform: scale(1.1);
@@ -753,6 +796,29 @@ function dtInjectStyle() {
     .dt-ai-style-button-dragging * {
       cursor: grabbing !important;
       user-select: none !important;
+    }
+    .dt-ai-style-toast {
+      position: fixed;
+      top: 88px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      z-index: 2147483647;
+      padding: 8px 16px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgb(99 102 241 / 90%);
+      font-size: 13px;
+      font-weight: 800;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .dt-ai-style-toast.is-visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .dt-ai-style-toast.is-exit {
+      background: rgb(20 184 166 / 90%);
     }
     @keyframes dt-ai-style-pulse {
       0%, 100% { opacity: .4; transform: scale(1); }
