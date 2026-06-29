@@ -2,6 +2,8 @@ import { spawn } from 'node:child_process'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import fs from 'node:fs'
+import os from 'node:os'
 import type { Plugin } from 'vite'
 import { buildDtAiStylePrompt } from './prompt'
 import type {
@@ -320,15 +322,41 @@ function dtValidateRequest(request: DtAiStyleEditRequest, options: DtResolvedPlu
   return ''
 }
 
+// 读取 Claude Code settings 配置的环境变量
+function dtLoadClaudeSettingsEnv(): Record<string, string> {
+  const settingsPaths = [
+    path.join(os.homedir(), '.claude', 'settings.json.ccs'),
+    path.join(os.homedir(), '.claude', 'settings.json')
+  ]
+
+  for (const settingsPath of settingsPaths) {
+    try {
+      if (fs.existsSync(settingsPath)) {
+        const content = fs.readFileSync(settingsPath, 'utf8')
+        const settings = JSON.parse(content) as { env?: Record<string, string> }
+        if (settings.env) {
+          return settings.env
+        }
+      }
+    } catch {
+      // 配置文件读取失败，忽略
+    }
+  }
+  return {}
+}
+
 // 获取跨平台 spawn 选项
 function dtGetSpawnOptions(root: string, options: DtResolvedPluginOptions) {
   // Windows: npm 全局包通常是 .cmd/.ps1 文件，需要 shell 来执行
   // macOS/Linux: 直接执行可执行文件，不需要 shell
   const isWindows = process.platform === 'win32'
 
+  // 合并 Claude settings 中的环境变量（如 API 令牌、模型配置）
+  const claudeEnv = dtLoadClaudeSettingsEnv()
+
   return {
     cwd: root,
-    env: process.env,
+    env: { ...process.env, ...claudeEnv },
     // Windows 必须使用 shell 执行 .cmd 文件
     // macOS/Linux 不需要 shell，直接执行更高效
     shell: isWindows,
