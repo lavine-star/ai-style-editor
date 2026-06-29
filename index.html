@@ -1,1195 +1,158 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AI 样式调试快速配置指南</title>
-    <!--
-    Assumptions: 面向 DT-H5 同事和其他 Vite 项目接入者；内容以复制配置和安全边界为主。
-    Palette: 靛蓝主色、深色技术背景、浅色内容卡片。
-    Type scale: 使用系统中文字体栈，标题紧凑，正文偏清晰文档化。
-    Components: sticky nav、步骤流、代码块、配置表、安全清单、FAQ、Tweaks。
-    DESIGN AXES:
-      tom: dark-tech
-      hero: split-assimetrico
-      feature: lista-numerada-grande
-      prova: stat-bar
-      textura: grid-pattern-sutil
-  -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Style Editor - Vite 插件文档</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-      /* ── Reset ─────────────────────────────────────── */
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      html {
-        font-size: 16px;
-        -webkit-text-size-adjust: 100%;
-        scroll-behavior: smooth;
-      }
-      html,
-      body {
-        width: 100%;
-        min-height: 100%;
-        overflow-x: hidden;
-      }
-      body {
-        line-height: 1.6;
-        -webkit-font-smoothing: antialiased;
-      }
-      img,
-      picture,
-      video,
-      svg {
-        display: block;
-        max-width: 100%;
-      }
-      input,
-      button,
-      textarea,
-      select {
-        font: inherit;
-      }
-      a {
-        color: inherit;
-        text-decoration: none;
-      }
-      button {
-        cursor: pointer;
-        border: none;
-        background: none;
-      }
-
-      /* ── Design Tokens (优化版) ─────────────────────────────── */
-      :root {
-        /* 色彩系统 */
-        --c-bg: #070812;
-        --c-surface: #101323;
-        --c-panel: #ffffff;
-        --c-panel-2: #f7f8ff;
-        --c-border: rgba(255, 255, 255, 0.12);
-        --c-line: rgba(99, 102, 241, 0.22);
-        --c-text: #f8fafc;
-        --c-text-dark: #111827;
-        --c-muted: rgba(248, 250, 252, 0.75);
-        --c-muted-dark: #475569;
-        --c-accent: #6366f1;
-        --c-accent-h: #4f46e5;
-        --c-accent-soft: rgba(99, 102, 241, 0.18);
-        --c-good: #14b8a6;
-        --c-warn: #f59e0b;
-
-        /* 字体栈 */
-        --f-headline: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
-          sans-serif;
-        --f-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
-          sans-serif;
-        --f-code: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-
-        /* 字号阶梯 */
-        --t-xs: clamp(0.75rem, 0.72rem + 0.15vw, 0.875rem);
-        --t-sm: clamp(0.875rem, 0.82rem + 0.27vw, 1rem);
-        --t-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-        --t-lg: clamp(1.125rem, 1.05rem + 0.37vw, 1.375rem);
-        --t-xl: clamp(1.375rem, 1.2rem + 0.87vw, 2rem);
-        --t-2xl: clamp(1.875rem, 1.55rem + 1.6vw, 3rem);
-        --t-3xl: clamp(2.5rem, 2rem + 2.5vw, 4.5rem);
-        --t-4xl: clamp(3.5rem, 2.8rem + 3.5vw, 7rem);
-
-        /* 8px 标准间距栅格 */
-        --s-1: 4px;
-        --s-2: 8px;
-        --s-3: 16px;
-        --s-4: 24px;
-        --s-6: 32px;
-        --s-8: 48px;
-        --s-12: 64px;
-        --s-16: 80px;
-        --s-24: 96px;
-
-        /* 圆角层级 */
-        --r-xs: 4px;
-        --r-sm: 8px;
-        --r-md: 12px;
-        --r-lg: 16px;
-        --r-xl: 24px;
-        --r-full: 9999px;
-
-        /* 阴影分层 */
-        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
-        --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.08);
-        --shadow-md: 0 4px 12px rgba(17, 24, 39, 0.12);
-        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.18);
-        --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.24);
-
-        /* 动画曲线与时长 */
-        --ease-out: cubic-bezier(0, 0, 0.2, 1);
-        --ease-in: cubic-bezier(0.4, 0, 1, 1);
-        --ease: cubic-bezier(0.4, 0, 0.2, 1);
-        --dur-fast: 100ms;
-        --dur-base: 200ms;
-        --dur-slow: 300ms;
-      }
-
-      body {
-        font-family: var(--f-body);
-        color: var(--c-text);
-        background: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-          radial-gradient(circle at 78% 10%, rgba(99, 102, 241, 0.35), transparent 34%),
-          radial-gradient(circle at 12% 18%, rgba(20, 184, 166, 0.15), transparent 30%), var(--c-bg);
-        background-size: 48px 48px, 48px 48px, auto, auto, auto;
-      }
-      body.compact {
-        --s-8: 36px;
-        --s-12: 48px;
-        --s-16: 64px;
-        --s-24: 72px;
-      }
-      body.hide-checklist .checklist-section {
-        display: none;
-      }
-
-      /* 文字排版体系 */
-      h1,
-      h2,
-      h3 {
-        font-family: var(--f-headline);
-        letter-spacing: -0.03em;
-        font-weight: 800;
-        line-height: 1.1;
-        margin: 0;
-      }
-      h1 {
-        font-size: var(--t-4xl);
-        font-weight: 900;
-        max-width: 12ch;
-        margin-bottom: var(--s-3);
-      }
-      h2 {
-        font-size: var(--t-3xl);
-        max-width: 15ch;
-        margin-bottom: var(--s-2);
-      }
-      h3 {
-        font-size: var(--t-xl);
-        color: var(--c-text-dark);
-        margin-bottom: var(--s-1);
-      }
-      p {
-        font-size: var(--t-base);
-        line-height: 1.75;
-        max-width: 65ch;
-        margin-bottom: var(--s-2);
-        color: inherit;
-      }
-      p:last-child {
-        margin-bottom: 0;
-      }
-      small,
-      .label {
-        font-size: var(--t-xs);
-        line-height: 1.4;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        font-weight: 700;
-      }
-
-      /* 焦点样式 */
-      :focus-visible {
-        outline: 2px solid var(--c-accent);
-        outline-offset: 4px;
-        border-radius: var(--r-sm);
-        transition: outline-offset var(--dur-fast) var(--ease);
-      }
-      :focus:not(:focus-visible) {
-        outline: none;
-      }
-
-      /* 全局容器 */
-      .page-shell {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-      .container {
-        width: 100%;
-        max-width: 1200px;
-        margin-inline: auto;
-        padding-inline: var(--s-3);
-      }
-
-      /* 顶部导航栏 */
-      .topbar {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        border-bottom: 1px solid var(--c-border);
-        background: rgba(7, 8, 18, 0.88);
-        backdrop-filter: blur(20px);
-        box-shadow: var(--shadow-sm);
-      }
-      .topbar-inner {
-        display: flex;
-        min-height: 72px;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--s-3);
-      }
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--s-2);
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        font-size: var(--t-sm);
-      }
-      .brand-mark {
-        display: grid;
-        width: 36px;
-        height: 36px;
-        place-items: center;
-        border-radius: var(--r-md);
-        background: linear-gradient(135deg, var(--c-accent), #a855f7);
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
-        transition: transform var(--dur-base) var(--ease);
-      }
-      .brand:hover .brand-mark {
-        transform: scale(1.05);
-      }
-      .brand-mark svg {
-        width: 20px;
-        height: 20px;
-        fill: none;
-        stroke: #fff;
-        stroke-width: 2;
-      }
-      .nav-pills {
-        display: none;
-        align-items: center;
-        gap: var(--s-1);
-        color: var(--c-muted);
-        font-size: var(--t-sm);
-      }
-      .nav-pills a {
-        padding: var(--s-1) var(--s-2);
-        border-radius: var(--r-full);
-        transition: all var(--dur-fast) var(--ease);
-        position: relative;
-      }
-      .nav-pills a::after {
-        content: '';
-        position: absolute;
-        bottom: 2px;
-        left: 50%;
-        transform: translateX(-50%) scaleX(0);
-        width: 60%;
-        height: 2px;
-        background: var(--c-accent);
-        border-radius: var(--r-full);
-        transition: transform var(--dur-base) var(--ease);
-      }
-      .nav-pills a:hover {
-        color: var(--c-text);
-        background: rgba(255, 255, 255, 0.08);
-      }
-      .nav-pills a:hover::after {
-        transform: translateX(-50%) scaleX(1);
-      }
-
-      /* 首页英雄区块 */
-      .hero {
-        padding: var(--s-16) 0 var(--s-12);
-        flex: 1;
-      }
-      .hero-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: var(--s-8);
-        align-items: center;
-      }
-      .hero-copy {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--s-4);
-      }
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--s-2);
-        padding: var(--s-1) var(--s-3);
-        color: #c7d2fe;
-        background: rgba(99, 102, 241, 0.15);
-        border: 1px solid rgba(165, 180, 252, 0.25);
-        border-radius: var(--r-full);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        margin-bottom: var(--s-2);
-      }
-      .eyebrow-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: var(--r-full);
-        background: var(--c-good);
-        box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.15);
-      }
-      .hero-subtitle {
-        color: var(--c-muted);
-        font-size: var(--t-lg);
-        line-height: 1.6;
-        max-width: 60ch;
-      }
-      .hero-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--s-3);
-        align-items: center;
-        margin-top: var(--s-2);
-      }
-
-      /* 按钮组件 */
-      .btn {
-        display: inline-flex;
-        min-height: 48px;
-        align-items: center;
-        justify-content: center;
-        gap: var(--s-2);
-        padding: var(--s-2) var(--s-6);
-        border-radius: var(--r-full);
-        font-size: var(--t-sm);
-        font-weight: 700;
-        white-space: nowrap;
-        align-self: flex-start;
-        transition: all var(--dur-base) var(--ease);
-        position: relative;
-        overflow: hidden;
-      }
-      .btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-        transition: left var(--dur-slow) var(--ease);
-      }
-      .btn:hover::before {
-        left: 100%;
-      }
-      .btn-primary {
-        color: #fff;
-        background: var(--c-accent);
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
-      }
-      .btn-primary:hover {
-        background: var(--c-accent-h);
-        transform: translateY(-2px);
-        box-shadow: 0 12px 28px rgba(99, 102, 241, 0.4);
-      }
-      .btn-secondary {
-        color: var(--c-text);
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid var(--c-border);
-      }
-      .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.12);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
-      }
-      .btn:active {
-        transform: translateY(0);
-        box-shadow: var(--shadow-xs);
-      }
-
-      /* 终端流程卡片 */
-      .terminal-card {
-        position: relative;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: var(--r-xl);
-        background: linear-gradient(145deg, rgba(16, 19, 35, 0.98), rgba(17, 24, 39, 0.8));
-        box-shadow: var(--shadow-lg);
-        transform: translateY(0);
-        transition: transform var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease);
-      }
-      .terminal-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-xl);
-      }
-      .terminal-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--s-3);
-        padding: var(--s-3) var(--s-4);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-        color: var(--c-muted);
-        font-size: var(--t-xs);
-      }
-      .traffic {
-        display: flex;
-        gap: var(--s-2);
-      }
-      .traffic span {
-        width: 10px;
-        height: 10px;
-        border-radius: var(--r-full);
-        background: rgba(255, 255, 255, 0.22);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      }
-      .traffic span:nth-child(1) {
-        background: #fb7185;
-      }
-      .traffic span:nth-child(2) {
-        background: #fbbf24;
-      }
-      .traffic span:nth-child(3) {
-        background: #34d399;
-      }
-      .flow-board {
-        display: grid;
-        gap: var(--s-3);
-        padding: var(--s-4);
-      }
-      .flow-step {
-        display: grid;
-        grid-template-columns: 48px 1fr;
-        gap: var(--s-3);
-        align-items: start;
-        padding: var(--s-3);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--r-lg);
-        background: rgba(255, 255, 255, 0.04);
-        transition: background var(--dur-base) var(--ease);
-      }
-      .flow-step:hover {
-        background: rgba(255, 255, 255, 0.06);
-      }
-      .flow-number {
-        display: grid;
-        width: 48px;
-        height: 48px;
-        place-items: center;
-        border-radius: var(--r-md);
-        color: #fff;
-        background: linear-gradient(135deg, var(--c-accent), #a855f7);
-        font-weight: 900;
-        font-size: var(--t-lg);
-        box-shadow: 0 4px 8px rgba(99, 102, 241, 0.2);
-      }
-      .flow-step strong {
-        display: block;
-        margin-bottom: var(--s-1);
-        color: #fff;
-        font-size: var(--t-base);
-      }
-      .flow-step span {
-        color: var(--c-muted);
-        font-size: var(--t-sm);
-        line-height: 1.6;
-      }
-
-      /* 通用区块 */
-      .section {
-        padding: var(--s-12) 0;
-        position: relative;
-      }
-      .section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 60px;
-        height: 4px;
-        background: linear-gradient(90deg, var(--c-accent), var(--c-good));
-        border-radius: var(--r-full);
-        opacity: 0.7;
-      }
-      .section-light {
-        color: var(--c-text-dark);
-        background: var(--c-panel);
-      }
-      .section-muted {
-        color: var(--c-text-dark);
-        background: var(--c-panel-2);
-      }
-      .section-head {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: var(--s-4);
-        margin-bottom: var(--s-8);
-        align-items: center;
-      }
-      .section-head p {
-        color: var(--c-muted-dark);
-        line-height: 1.7;
-      }
-      .section-label {
-        color: var(--c-accent);
-        font-weight: 800;
-        margin-bottom: var(--s-1);
-        display: inline-block;
-      }
-
-      /* 接入步骤列表 */
-      .step-list {
-        display: grid;
-        gap: var(--s-1);
-      }
-      .setup-step {
-        display: grid;
-        grid-template-columns: 56px 1fr;
-        gap: var(--s-4);
-        padding: var(--s-6) 0;
-        border-top: 1px solid rgba(15, 23, 42, 0.12);
-        transition: background var(--dur-base) var(--ease);
-      }
-      .setup-step:hover {
-        background: rgba(99, 102, 241, 0.03);
-      }
-      .setup-step:last-child {
-        border-bottom: 1px solid rgba(15, 23, 42, 0.12);
-      }
-      .setup-num {
-        font-size: var(--t-2xl);
-        font-weight: 900;
-        line-height: 1;
-        color: var(--c-accent);
-        opacity: 0.6;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-      }
-      .setup-content {
-        display: grid;
-        gap: var(--s-3);
-      }
-      .setup-content p {
-        color: var(--c-muted-dark);
-        line-height: 1.7;
-      }
-
-      /* 代码卡片 */
-      .code-card {
-        overflow: hidden;
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        border-radius: var(--r-lg);
-        background: #0b1020;
-        box-shadow: var(--shadow-md);
-        transition: transform var(--dur-base) var(--ease), box-shadow var(--dur-base) var(--ease);
-      }
-      .code-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-      }
-      .code-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--s-3);
-        padding: var(--s-2) var(--s-3);
-        color: #cbd5e1;
-        background: rgba(255, 255, 255, 0.05);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: var(--t-xs);
-      }
-      .copy-btn {
-        display: inline-flex;
-        min-height: 34px;
-        align-items: center;
-        padding: var(--s-1) var(--s-3);
-        border-radius: var(--r-full);
-        color: #e0e7ff;
-        background: rgba(99, 102, 241, 0.2);
-        border: 1px solid rgba(129, 140, 248, 0.3);
-        font-size: var(--t-xs);
-        transition: all var(--dur-base) var(--ease);
-      }
-      .copy-btn:hover {
-        background: rgba(99, 102, 241, 0.3);
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-xs);
-      }
-      .copy-btn:active {
-        transform: translateY(0);
-      }
-      pre {
-        overflow-x: auto;
-        padding: var(--s-3) var(--s-3);
-        color: #dbeafe;
-        font-family: var(--f-code);
-        font-size: 0.92rem;
-        line-height: 1.8;
-        scrollbar-width: thin;
-        scrollbar-color: var(--c-accent-soft) transparent;
-      }
-      pre::-webkit-scrollbar {
-        height: 6px;
-      }
-      pre::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      pre::-webkit-scrollbar-thumb {
-        background-color: var(--c-accent-soft);
-        border-radius: var(--r-full);
-      }
-      .token-accent {
-        color: #a5b4fc;
-      }
-      .token-good {
-        color: #5eead4;
-      }
-      .token-warn {
-        color: #fcd34d;
-      }
-
-      /* 多卡片网格 */
-      .bento {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: var(--s-3);
-      }
-      .info-card {
-        min-height: 180px;
-        padding: var(--s-6);
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        border-radius: var(--r-lg);
-        background: #fff;
-        box-shadow: var(--shadow-sm);
-        transition: all var(--dur-base) var(--ease);
-        display: flex;
-        flex-direction: column;
-      }
-      .info-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-md);
-        border-color: rgba(99, 102, 241, 0.2);
-      }
-      .info-card.large {
-        background: linear-gradient(135deg, #eef2ff, #ffffff 64%);
-      }
-      .info-card p {
-        margin-top: var(--s-3);
-        color: var(--c-muted-dark);
-        flex: 1;
-      }
-
-      /* 进度统计面板 */
-      .stat-panel {
-        display: grid;
-        gap: var(--s-4);
-        padding: var(--s-6);
-        border-radius: var(--r-xl);
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(20, 184, 166, 0.12));
-        border: 1px solid rgba(99, 102, 241, 0.2);
-      }
-      .stat-row {
-        display: grid;
-        gap: var(--s-1);
-      }
-      .stat-top {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--s-3);
-        color: var(--c-text-dark);
-        font-weight: 800;
-        font-size: var(--t-sm);
-      }
-      .stat-track {
-        height: 8px;
-        overflow: hidden;
-        border-radius: var(--r-full);
-        background: rgba(15, 23, 42, 0.12);
-        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
-      }
-      .stat-fill {
-        height: 100%;
-        border-radius: var(--r-full);
-        background: var(--c-accent);
-        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
-        transition: width var(--dur-slow) var(--ease);
-      }
-
-      /* 配置表格 */
-      .table-wrap {
-        overflow-x: auto;
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        border-radius: var(--r-lg);
-        background: #fff;
-        box-shadow: var(--shadow-sm);
-        scrollbar-width: thin;
-        scrollbar-color: var(--c-accent-soft) transparent;
-      }
-      .table-wrap::-webkit-scrollbar {
-        height: 6px;
-      }
-      .table-wrap::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .table-wrap::-webkit-scrollbar-thumb {
-        background-color: var(--c-accent-soft);
-        border-radius: var(--r-full);
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 760px;
-      }
-      th,
-      td {
-        padding: var(--s-3);
-        text-align: left;
-        vertical-align: top;
-        border-bottom: 1px solid rgba(15, 23, 42, 0.1);
-      }
-      th {
-        color: #334155;
-        background: #f8fafc;
-        font-size: var(--t-sm);
-        font-weight: 700;
-        position: relative;
-      }
-      th::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background: var(--c-accent-soft);
-        transform: scaleX(0);
-        transition: transform var(--dur-base) var(--ease);
-      }
-      .table-wrap:hover th::after {
-        transform: scaleX(1);
-      }
-      td {
-        color: #475569;
-        font-size: var(--t-sm);
-        transition: background var(--dur-fast) var(--ease);
-      }
-      tr:hover td {
-        background: rgba(99, 102, 241, 0.04);
-      }
-      td code,
-      th code {
-        font-family: var(--f-code);
-        color: var(--c-accent-h);
-        font-size: 0.88rem;
-        background: rgba(99, 102, 241, 0.08);
-        padding: 2px 6px;
-        border-radius: var(--r-xs);
-      }
-      tr:last-child td {
-        border-bottom: 0;
-      }
-
-      /* 安全校验清单 */
-      .check-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: var(--s-3);
-      }
-      .check-item {
-        display: grid;
-        grid-template-columns: 40px 1fr;
-        gap: var(--s-3);
-        padding: var(--s-4);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: var(--r-lg);
-        background: rgba(255, 255, 255, 0.06);
-        transition: all var(--dur-base) var(--ease);
-      }
-      .check-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(99, 102, 241, 0.2);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
-      }
-      .check-icon {
-        display: grid;
-        width: 40px;
-        height: 40px;
-        place-items: center;
-        border-radius: var(--r-md);
-        background: rgba(20, 184, 166, 0.16);
-        box-shadow: 0 2px 4px rgba(20, 184, 166, 0.1);
-      }
-      .check-icon svg {
-        width: 22px;
-        height: 22px;
-        stroke: #5eead4;
-        stroke-width: 2.2;
-        fill: none;
-        transition: transform var(--dur-base) var(--ease);
-      }
-      .check-item:hover .check-icon svg {
-        transform: scale(1.1);
-      }
-      .check-item strong {
-        display: block;
-        margin-bottom: var(--s-1);
-        font-size: var(--t-base);
-      }
-      .check-item span {
-        color: var(--c-muted);
-        font-size: var(--t-sm);
-        line-height: 1.6;
-      }
-
-      /* FAQ 折叠面板 */
-      .faq-list {
-        display: grid;
-        gap: var(--s-3);
-      }
-      details {
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        border-radius: var(--r-lg);
-        background: #fff;
-        box-shadow: var(--shadow-sm);
-        transition: all var(--dur-base) var(--ease);
-        overflow: hidden;
-      }
-      details:hover {
-        box-shadow: var(--shadow-md);
-        border-color: rgba(99, 102, 241, 0.2);
-      }
-      summary {
-        cursor: pointer;
-        padding: var(--s-3) var(--s-4);
-        color: var(--c-text-dark);
-        font-weight: 800;
-        list-style: none;
-        position: relative;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      summary::after {
-        content: '+';
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: var(--r-full);
-        background: var(--c-accent-soft);
-        color: var(--c-accent);
-        font-size: var(--t-xs);
-        font-weight: 900;
-        transition: transform var(--dur-base) var(--ease);
-      }
-      details[open] summary::after {
-        transform: rotate(45deg);
-      }
-      summary::-webkit-details-marker {
-        display: none;
-      }
-      details p {
-        padding: 0 var(--s-4) var(--s-4);
-        color: var(--c-muted-dark);
-        line-height: 1.75;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-8px);
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
         }
-        to {
-          opacity: 1;
-          transform: translateY(0);
+        .code-block {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-top: 0.75rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
-      }
-      details[open] p {
-        animation: fadeIn var(--dur-slow) var(--ease);
-      }
-
-      /* 底部CTA区域 */
-      .final-cta {
-        padding: var(--s-16) 0;
-        text-align: center;
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.14)), var(--c-bg);
-        margin-top: var(--s-8);
-      }
-      .final-cta .container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--s-4);
-        max-width: 800px;
-      }
-      .final-cta h2 {
-        max-width: 16ch;
-        margin-inline: auto;
-        color: var(--c-text);
-      }
-      .final-cta p {
-        color: var(--c-muted);
-        margin-inline: auto;
-        text-align: center;
-        line-height: 1.8;
-      }
-
-      /* 调试面板 */
-      .tweaks {
-        position: fixed;
-        right: var(--s-3);
-        bottom: var(--s-3);
-        z-index: 50;
-        display: none;
-        width: min(320px, calc(100vw - 48px));
-        padding: var(--s-3);
-        border: 1px solid rgba(15, 23, 42, 0.15);
-        border-radius: var(--r-lg);
-        color: var(--c-text-dark);
-        background: rgba(255, 255, 255, 0.96);
-        box-shadow: var(--shadow-xl);
-        backdrop-filter: blur(20px);
-      }
-      body.editing .tweaks {
-        display: grid;
-        gap: var(--s-3);
-      }
-      .tweaks h2 {
-        font-size: var(--t-lg);
-        max-width: none;
-        letter-spacing: -0.02em;
-        color: var(--c-text-dark);
-        padding-bottom: var(--s-1);
-        border-bottom: 1px solid rgba(15, 23, 42, 0.1);
-      }
-      .tweak-field {
-        display: grid;
-        gap: var(--s-1);
-        color: #334155;
-        font-size: var(--t-sm);
-      }
-      .tweak-field input[type='color'] {
-        width: 100%;
-        height: 40px;
-        border: 1px solid rgba(15, 23, 42, 0.15);
-        border-radius: var(--r-sm);
-        background: #fff;
-        cursor: pointer;
-      }
-      .tweak-field select {
-        min-height: 40px;
-        padding: 0 var(--s-3);
-        border: 1px solid rgba(15, 23, 42, 0.15);
-        border-radius: var(--r-sm);
-        background: #fff;
-        cursor: pointer;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23475569' d='M10.8 1.2L6 6 1.2 1.2' stroke='%23475569' stroke-width='2' fill='none'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 12px center;
-      }
-      .tweak-inline {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--s-2);
-      }
-
-      /* 响应式适配 */
-      @media (min-width: 768px) {
-        .nav-pills {
-          display: flex;
+        .code-block code {
+            font-family: 'JetBrains Mono', monospace;
         }
-        .hero-grid {
-          grid-template-columns: 1.12fr 0.88fr;
+        .prose h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
         }
-        .section-head {
-          grid-template-columns: 0.9fr 1.1fr;
+        .prose h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #1e293b;
         }
-        .bento {
-          grid-template-columns: repeat(4, 1fr);
+        .prose p {
+            margin-bottom: 1rem;
+            line-height: 1.75;
+            color: #334155;
         }
-        .info-card.large {
-          grid-column: span 2;
-          grid-row: span 2;
-        }
-        .info-card.medium {
-          grid-column: span 2;
-        }
-        .info-card.small {
-          grid-column: span 1;
-        }
-        .check-grid {
-          grid-template-columns: repeat(2, 1fr);
-          gap: var(--s-4);
-        }
-      }
-      @media (max-width: 640px) {
-        .container {
-          padding-inline: var(--s-2);
-        }
-        .hero {
-          padding-top: var(--s-12);
-          padding-bottom: var(--s-8);
-        }
-        .setup-step {
-          grid-template-columns: 1fr;
-          gap: var(--s-2);
-        }
-        .setup-num {
-          justify-content: flex-start;
-          margin-bottom: var(--s-1);
-        }
-        h1 {
-          max-width: 100%;
-          font-size: clamp(2.5rem, 8vw, 4rem);
-        }
-        h2 {
-          max-width: 100%;
-          font-size: clamp(2rem, 6vw, 3rem);
-        }
-        .terminal-top {
-          flex-direction: row;
-          align-items: center;
-        }
-        .hero-actions {
-          width: 100%;
-        }
-        .btn {
-          flex: 1;
-          justify-content: center;
-        }
-        .final-cta h2 {
-          max-width: 100%;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-          scroll-behavior: auto !important;
-          transform: none !important;
-        }
-      }
     </style>
-  </head>
-  <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <div class="container topbar-inner">
-          <a class="brand" href="#top" aria-label="回到页面顶部">
-            <span class="brand-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"></path>
-                <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15Z"></path>
-              </svg>
-            </span>
-            <span>AI 样式调试配置</span>
-          </a>
-          <nav class="nav-pills" aria-label="页面导航">
-            <a href="#steps">三步接入</a>
-            <a href="#config">配置项</a>
-            <a href="#safety">安全边界</a>
-            <a href="#faq">FAQ</a>
-            <a href="https://gitee.com/Lavines/ai-style-editor" target="_blank" rel="noopener">Gitee</a>
-            <a href="https://github.com/lavine-star/ai-style-editor" target="_blank" rel="noopener">GitHub</a>
-          </nav>
+</head>
+<body class="antialiased font-sans pb-16">
+
+<!-- Hero Section -->
+<header class="bg-white border-b border-slate-200 pt-16 pb-12 relative overflow-hidden">
+    <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-500 to-indigo-500"></div>
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="inline-flex items-center justify-center p-3 bg-primary-100 text-primary-600 rounded-2xl mb-6 shadow-sm">
+            <i data-lucide="wand-2" class="w-8 h-8"></i>
         </div>
-      </header>
-      <main id="top">
-        <section class="hero">
-          <div class="container hero-grid">
-            <div class="hero-copy">
-              <span class="eyebrow label"><span class="eyebrow-dot" aria-hidden="true"></span>本地开发专用工具</span>
-              <h1>让同事也能点选页面直接改样式</h1>
-              <p class="hero-subtitle">
-                复制一个插件目录，改一段 Vite 配置，运行 test 模式。浏览器点选区域后，Claude Code
-                会按项目规则修改源码，并通过热更新看到效果。
-              </p>
-              <div class="hero-actions">
-                <a class="btn btn-primary" href="#steps">开始配置</a>
-                <a class="btn btn-secondary" href="#config">查看可选参数</a>
-              </div>
+        <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight mb-4">AI Style Editor</h1>
+        <p class="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto mb-8">
+            一个强大的 Vite 插件，让你在浏览器中点选页面元素，通过 <span class="font-semibold text-slate-800">Claude Code</span> 自动修改源码样式。
+        </p>
+
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="https://github.com/lavine-star/ai-style-editor" target="_blank" class="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm font-medium">
+                <i data-lucide="github" class="w-5 h-5"></i>
+                GitHub
+            </a>
+            <a href="https://gitee.com/Lavines/ai-style-editor" target="_blank" class="inline-flex items-center gap-2 px-6 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm font-medium">
+                <i data-lucide="git-branch" class="w-5 h-5"></i>
+                Gitee
+            </a>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 prose max-w-none">
+
+    <!-- Features Grid -->
+    <h2 id="features"><i data-lucide="sparkles" class="w-6 h-6 text-primary-500"></i> 功能介绍</h2>
+    <div class="grid sm:grid-cols-2 gap-6 my-6">
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-4">
+                <i data-lucide="mouse-pointer-click" class="w-5 h-5"></i>
             </div>
-            <aside class="terminal-card" aria-label="AI 样式调试执行流程">
-              <div class="terminal-top">
-                <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
-                <span>pnpm run test → browser overlay → claude</span>
-              </div>
-              <div class="flow-board">
-                <div class="flow-step">
-                  <div class="flow-number">1</div>
-                  <div>
-                    <strong>浏览器点选区域</strong
-                    ><span>悬浮按钮进入选区模式，自动采集 DOM、路由和 Vue 组件文件。</span>
-                  </div>
-                </div>
-                <div class="flow-step">
-                  <div class="flow-number">2</div>
-                  <div>
-                    <strong>输入样式要求</strong><span>在悬浮面板里描述目标效果，例如“按钮更醒目，卡片更轻盈”。</span>
-                  </div>
-                </div>
-                <div class="flow-step">
-                  <div class="flow-number">3</div>
-                  <div>
-                    <strong>Claude Code 修改源码</strong
-                    ><span>Vite 中间件在本地触发 Claude，只允许在启用模式下工作。</span>
-                  </div>
-                </div>
-                <div class="flow-step">
-                  <div class="flow-number">4</div>
-                  <div>
-                    <strong>页面热更新查看</strong><span>源码保存后由 Vite HMR 展示效果，不需要同事手动找组件。</span>
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </div>
-        </section>
-        <section class="section section-light" id="steps">
-          <div class="container">
-            <div class="section-head">
-              <div>
-                <div class="section-label label">Quick setup</div>
-                <h2>三步接入其他 Vite 项目</h2>
-              </div>
-              <p>
-                目标项目需要是 Vite 开发服务，并且同事本机已经安装、登录 Claude Code。插件默认只在
-                <code>mode === 'test'</code> 时注入前端工具。
-              </p>
+            <h3 class="!mt-0 text-lg font-semibold text-slate-900">浏览器端点选</h3>
+            <p class="!mb-0 text-sm text-slate-600">悬浮按钮进入选区模式，自动采集 DOM 信息、路由和 Vue 组件文件。</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center mb-4">
+                <i data-lucide="message-square-text" class="w-5 h-5"></i>
             </div>
-            <div class="step-list">
-              <article class="setup-step">
-                <div class="setup-num">01</div>
-                <div class="setup-content">
-                  <h3>复制插件目录</h3>
-                  <p>把当前项目里的整个目录复制到目标项目，路径保持一致最省事。</p>
-                  <div class="code-card">
-                    <div class="code-head">
-                      <span>需要复制</span><button class="copy-btn" data-copy-target="copy-tree">复制</button>
-                    </div>
-                    <pre><code id="copy-tree">tools/ai-style-editor/</code></pre>
-                  </div>
-                </div>
-              </article>
-              <article class="setup-step">
-                <div class="setup-num">02</div>
-                <div class="setup-content">
-                  <h3>在 vite.config.ts 引入插件</h3>
-                  <p>把插件放进 <code>plugins</code> 数组，并按项目补充规则。规则越具体，AI 越不容易改错范围。</p>
-                  <div class="code-card">
-                    <div class="code-head">
-                      <span>vite.config.ts</span><button class="copy-btn" data-copy-target="vite-config">复制</button>
-                    </div>
-                    <pre><code id="vite-config">import { defineConfig } from 'vite'
+            <h3 class="!mt-0 text-lg font-semibold text-slate-900">自然语言描述</h3>
+            <p class="!mb-0 text-sm text-slate-600">直接输入样式要求，例如“按钮更醒目，卡片更轻盈”，无需手动编写 CSS。</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
+                <i data-lucide="terminal" class="w-5 h-5"></i>
+            </div>
+            <h3 class="!mt-0 text-lg font-semibold text-slate-900">Claude Code 自动修改</h3>
+            <p class="!mb-0 text-sm text-slate-600">本地调用 Claude Code，按项目规则智能、准确地修改目标源文件。</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mb-4">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+            </div>
+            <h3 class="!mt-0 text-lg font-semibold text-slate-900">热更新 (HMR) 实时预览</h3>
+            <p class="!mb-0 text-sm text-slate-600">源码保存后由 Vite 自动刷新，所见即所得，无需手动查找组件位置。</p>
+        </div>
+    </div>
+
+    <!-- Quick Start -->
+    <h2 id="quick-start"><i data-lucide="rocket" class="w-6 h-6 text-primary-500"></i> 快速开始</h2>
+
+    <h3>1. 复制插件目录</h3>
+    <p>将整个 <code>tools/ai-style-editor</code> 目录复制到目标项目：</p>
+    <div class="code-block"><pre><code>tools/ai-style-editor/</code></pre></div>
+
+    <h3>2. 配置 Vite 插件</h3>
+    <p>在 <code>vite.config.ts</code> 中引入插件：</p>
+    <div class="code-block"><pre><code>import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { dtAiStyleEditorPlugin } from './tools/ai-style-editor'
+
 export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
@@ -1205,334 +168,162 @@ export default defineConfig(({ mode }) => ({
       `
     })
   ]
-}))</code></pre>
-                  </div>
-                </div>
-              </article>
-              <article class="setup-step">
-                <div class="setup-num">03</div>
-                <div class="setup-content">
-                  <h3>增加 test 模式启动脚本</h3>
-                  <p>同事只需要运行这个脚本。普通 <code>pnpm dev</code> 不会注入 AI 样式调试按钮。</p>
-                  <div class="code-card">
-                    <div class="code-head">
-                      <span>package.json</span><button class="copy-btn" data-copy-target="package-script">复制</button>
-                    </div>
-                    <pre><code id="package-script">{
+}))</code></pre></div>
+
+    <h3>3. 添加启动脚本</h3>
+    <p>在 <code>package.json</code> 中添加 <code>test</code> 模式脚本：</p>
+    <div class="code-block"><pre><code>{
   "scripts": {
     "test": "vite --host 0.0.0.0 --mode test"
   }
-}</code></pre>
-                  </div>
-                  <div class="code-card">
-                    <div class="code-head">
-                      <span>启动命令</span><button class="copy-btn" data-copy-target="run-command">复制</button>
-                    </div>
-                    <pre><code id="run-command">pnpm run test</code></pre>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-        <section class="section section-muted">
-          <div class="container">
-            <div class="section-head">
-              <div>
-                <div class="section-label label">Team handoff</div>
-                <h2>发给同事前确认这几件事</h2>
-              </div>
-              <div class="stat-panel" aria-label="接入条件完成度示意">
-                <div class="stat-row">
-                  <div class="stat-top"><span>复制插件目录</span><span>必需</span></div>
-                  <div class="stat-track"><div class="stat-fill" style="width: 100%"></div></div>
-                </div>
-                <div class="stat-row">
-                  <div class="stat-top"><span>Claude Code 可执行</span><span>必需</span></div>
-                  <div class="stat-track"><div class="stat-fill" style="width: 100%"></div></div>
-                </div>
-                <div class="stat-row">
-                  <div class="stat-top"><span>项目规则写清楚</span><span>建议</span></div>
-                  <div class="stat-track"><div class="stat-fill" style="width: 82%"></div></div>
-                </div>
-              </div>
-            </div>
-            <div class="bento">
-              <article class="info-card large">
-                <h3>本机必须能运行 Claude Code</h3>
-                <p>
-                  同事需要先安装并登录 Claude Code，确保终端里执行
-                  <code>claude</code> 不报错。插件只是帮浏览器把样式修改请求转成 Claude Code 命令，不会自带账号能力。
-                </p>
-              </article>
-              <article class="info-card medium">
-                <h3>只给 test 模式使用</h3>
-                <p>默认配置是 <code>enabled: mode === 'test'</code>。生产构建不会注入按钮，普通 dev 也不会显示。</p>
-              </article>
-              <article class="info-card small">
-                <h3>先改规则</h3>
-                <p>把 Tailwind、UI 库限制、图片规范、禁止目录写进 <code>projectRules</code>。</p>
-              </article>
-              <article class="info-card small">
-                <h3>先备份代码</h3>
-                <p>建议同事在 Git 分支里使用，方便查看 diff 和回退。</p>
-              </article>
-            </div>
-          </div>
-        </section>
-        <section class="section section-light" id="config">
-          <div class="container">
-            <div class="section-head">
-              <div>
-                <div class="section-label label">Options</div>
-                <h2>常用配置项</h2>
-              </div>
-              <p>
-                大多数项目只需要配置 <code>enabled</code>、<code>projectName</code> 和
-                <code>projectRules</code>。其他参数用于改 endpoint、源码目录、允许文件类型和 Claude 命令。
-              </p>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>参数</th>
-                    <th>默认值</th>
-                    <th>用途</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><code>enabled</code></td>
-                    <td><code>config.mode === 'test'</code></td>
-                    <td>控制是否注入浏览器按钮和启用本地接口。</td>
-                  </tr>
-                  <tr>
-                    <td><code>projectName</code></td>
-                    <td><code>当前项目</code></td>
-                    <td>出现在 AI prompt 里，帮助 Claude Code 理解项目。</td>
-                  </tr>
-                  <tr>
-                    <td><code>projectRules</code></td>
-                    <td>通用前端样式规范</td>
-                    <td>写项目硬约束，例如 Tailwind 优先、禁止改业务逻辑。</td>
-                  </tr>
-                  <tr>
-                    <td><code>sourceRoot</code></td>
-                    <td><code>src</code></td>
-                    <td>限制源码定位范围，其他目录会被忽略。</td>
-                  </tr>
-                  <tr>
-                    <td><code>allowedExtensions</code></td>
-                    <td><code>['.vue']</code></td>
-                    <td>限制可定位的组件文件类型。</td>
-                  </tr>
-                  <tr>
-                    <td><code>protectedPaths</code></td>
-                    <td><code>router / stores / apis / mock</code></td>
-                    <td>写进 prompt，提醒 AI 不要修改这些路径。</td>
-                  </tr>
-                  <tr>
-                    <td><code>command</code></td>
-                    <td><code>claude</code></td>
-                    <td>Claude Code 命令名。如果同事用自定义别名，可以在这里改。</td>
-                  </tr>
-                  <tr>
-                    <td><code>permissionMode</code></td>
-                    <td><code>acceptEdits</code></td>
-                    <td>传给 Claude Code 的权限模式。</td>
-                  </tr>
-                  <tr>
-                    <td><code>requireComponentFile</code></td>
-                    <td><code>true</code></td>
-                    <td>要求必须定位到组件文件，减少误改范围。</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-        <section class="section checklist-section" id="safety">
-          <div class="container">
-            <div class="section-head">
-              <div>
-                <div class="section-label label">Safety boundary</div>
-                <h2>默认安全边界</h2>
-              </div>
-              <p>这个工具是本地开发效率工具，不是线上能力。它的设计目标是让样式改动更快，同时把可执行范围压到最低。</p>
-            </div>
-            <div class="check-grid">
-              <article class="check-item">
-                <span class="check-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
-                </span>
-                <div>
-                  <strong>只在启用模式注入</strong><span>当前配置只允许 test 模式显示悬浮按钮和调用接口。</span>
-                </div>
-              </article>
-              <article class="check-item">
-                <span class="check-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
-                </span>
-                <div>
-                  <strong>生产构建无残留</strong><span>插件只作用于 Vite serve，不进入 production build。</span>
-                </div>
-              </article>
-              <article class="check-item">
-                <span class="check-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
-                </span>
-                <div>
-                  <strong>浏览器不传命令</strong><span>后端固定调用 Claude Code，用户输入只作为样式要求。</span>
-                </div>
-              </article>
-              <article class="check-item">
-                <span class="check-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
-                </span>
-                <div>
-                  <strong>限制源码定位</strong><span>组件文件路径必须落在 sourceRoot 且扩展名在允许列表内。</span>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-        <section class="section section-light" id="faq">
-          <div class="container">
-            <div class="section-head">
-              <div>
-                <div class="section-label label">FAQ</div>
-                <h2>接入时最常见的问题</h2>
-              </div>
-              <p>如果按钮没出现，优先检查启动模式和 vite.config.ts。接口返回 403 通常说明当前不是启用模式。</p>
-            </div>
-            <div class="faq-list">
-              <details open>
-                <summary>为什么我运行 pnpm dev 没有按钮？</summary>
-                <p>
-                  这是预期行为。当前建议只在 <code>pnpm run test</code> 的
-                  <code>mode === 'test'</code> 中启用，避免普通开发或生产环境误触发。
-                </p>
-              </details>
-              <details>
-                <summary>其他项目不是 Vue 可以用吗？</summary>
-                <p>
-                  可以作为 Vite 插件接入，但当前浏览器端源码定位主要依赖 Vue 组件实例信息。React 或普通 HTML
-                  项目需要调整客户端里的组件文件定位逻辑。
-                </p>
-              </details>
-              <details>
-                <summary>能不能让 AI 改多个文件？</summary>
-                <p>
-                  可以，但建议让
-                  <code>projectRules</code>
-                  写清楚“优先修改选中元素附近结构”。这个工具的优势是小范围样式调试，不建议让它做大重构。
-                </p>
-              </details>
-              <details>
-                <summary>同事没有 Claude Code 账号怎么办？</summary>
-                <p>
-                  这个方案是本机 Claude Code bridge。同事需要自己安装并登录 Claude Code，否则后端无法启动
-                  <code>claude</code> 命令。
-                </p>
-              </details>
-            </div>
-          </div>
-        </section>
-        <section class="final-cta">
-          <div class="container">
-            <div class="section-label label">Ready</div>
-            <h2>复制目录，接入配置，运行 test 模式</h2>
-            <p>推荐把这个 HTML 和 <code>tools/ai-style-editor</code> 一起发给同事，让他们先在独立分支里试用。</p>
-            <a class="btn btn-primary" href="#steps">回到接入步骤</a>
-          </div>
-        </section>
-      </main>
-      <aside class="tweaks" aria-label="Tweaks">
-        <h2>Tweaks</h2>
-        <label class="tweak-field">
-          Accent color
-          <input id="tweak-accent" type="color" value="#6366f1" />
-        </label>
-        <label class="tweak-field">
-          Density
-          <select id="tweak-density">
-            <option value="comfortable">Comfortable</option>
-            <option value="compact">Compact</option>
-          </select>
-        </label>
-        <label class="tweak-inline">
-          <span>Show safety checklist</span>
-          <input id="tweak-checklist" type="checkbox" checked />
-        </label>
-      </aside>
-      <script>
-        const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/ {
-          accentColor: '#6366f1',
-          density: 'comfortable',
-          showChecklist: true
-        } /*EDITMODE-END*/
-        const tweakState = { ...TWEAK_DEFAULTS }
-        function showTweaks() {
-          document.body.classList.add('editing')
-        }
-        function hideTweaks() {
-          document.body.classList.remove('editing')
-        }
-        function applyTweaks() {
-          document.documentElement.style.setProperty('--c-accent', tweakState.accentColor)
-          document.documentElement.style.setProperty('--c-accent-h', shadeColor(tweakState.accentColor, -12))
-          document.body.classList.toggle('compact', tweakState.density === 'compact')
-          document.body.classList.toggle('hide-checklist', !tweakState.showChecklist)
-        }
-        function setTweak(key, value) {
-          tweakState[key] = value
-          applyTweaks()
-          window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: value } }, '*')
-        }
-        function shadeColor(hex, percent) {
-          const clean = hex.replace('#', '')
-          const num = parseInt(clean, 16)
-          const amt = Math.round(2.55 * percent)
-          const r = Math.max(0, Math.min(255, (num >> 16) + amt))
-          const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + amt))
-          const b = Math.max(0, Math.min(255, (num & 0x0000ff) + amt))
-          return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`
-        }
-        window.addEventListener('message', (event) => {
-          if (event.data?.type === '__activate_edit_mode') showTweaks()
-          if (event.data?.type === '__deactivate_edit_mode') hideTweaks()
-        })
-        window.parent.postMessage({ type: '__edit_mode_available' }, '*')
-        document.querySelectorAll('.copy-btn').forEach((button) => {
-          button.addEventListener('click', async () => {
-            const target = document.getElementById(button.dataset.copyTarget || '')
-            if (!target) return
-            const text = target.textContent.trim()
-            try {
-              await navigator.clipboard.writeText(text)
-              const previous = button.textContent
-              button.textContent = '已复制'
-              window.setTimeout(() => {
-                button.textContent = previous
-              }, 1400)
-            } catch {
-              const range = document.createRange()
-              range.selectNodeContents(target)
-              const selection = window.getSelection()
-              selection.removeAllRanges()
-              selection.addRange(range)
-            }
-          })
-        })
-        const accentInput = document.getElementById('tweak-accent')
-        const densitySelect = document.getElementById('tweak-density')
-        const checklistInput = document.getElementById('tweak-checklist')
-        accentInput.addEventListener('input', (event) => setTweak('accentColor', event.target.value))
-        densitySelect.addEventListener('change', (event) => setTweak('density', event.target.value))
-        checklistInput.addEventListener('change', (event) => setTweak('showChecklist', event.target.checked))
-        applyTweaks()
-      </script>
+}</code></pre></div>
+
+    <h3>4. 启动并使用</h3>
+    <div class="code-block"><pre><code>pnpm run test</code></pre></div>
+    <div class="bg-slate-100 p-4 rounded-lg border border-slate-200 mt-4 flex items-start gap-3">
+        <i data-lucide="info" class="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5"></i>
+        <div class="text-sm text-slate-700">
+            浏览器会显示悬浮按钮，点击后：
+            <ol class="list-decimal list-inside mt-2 space-y-1">
+                <li>选择页面元素</li>
+                <li>输入样式修改要求</li>
+                <li>Claude Code 自动修改源码</li>
+                <li>页面热更新显示效果</li>
+            </ol>
+        </div>
     </div>
-  </body>
+
+    <!-- Configuration -->
+    <h2 id="configuration"><i data-lucide="settings-2" class="w-6 h-6 text-primary-500"></i> 配置选项</h2>
+    <div class="overflow-x-auto my-6 rounded-lg border border-slate-200 shadow-sm">
+        <table class="w-full text-left border-collapse bg-white">
+            <thead>
+            <tr class="bg-slate-50 text-slate-700 text-sm font-semibold border-b border-slate-200">
+                <th class="py-3 px-4">参数</th>
+                <th class="py-3 px-4">默认值</th>
+                <th class="py-3 px-4">说明</th>
+            </tr>
+            </thead>
+            <tbody class="text-sm text-slate-600 divide-y divide-slate-100">
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">enabled</td>
+                <td class="py-3 px-4 font-mono">config.mode === 'test'</td>
+                <td class="py-3 px-4">控制是否启用插件</td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">projectName</td>
+                <td class="py-3 px-4">当前项目</td>
+                <td class="py-3 px-4">项目名称，帮助 Claude 理解上下文</td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">projectRules</td>
+                <td class="py-3 px-4">通用前端规范</td>
+                <td class="py-3 px-4">项目约束规则，限制 AI 修改范围</td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">sourceRoot</td>
+                <td class="py-3 px-4 font-mono">'src'</td>
+                <td class="py-3 px-4">源码目录，其他目录会被忽略</td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">allowedExtensions</td>
+                <td class="py-3 px-4 font-mono">['.vue']</td>
+                <td class="py-3 px-4">允许修改的文件类型</td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">protectedPaths</td>
+                <td class="py-3 px-4 font-mono">['router', 'stores', ...]</td>
+                <td class="py-3 px-4">禁止修改的敏感路径</td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">command</td>
+                <td class="py-3 px-4 font-mono">'claude'</td>
+                <td class="py-3 px-4">Claude Code 终端命令名</td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">permissionMode</td>
+                <td class="py-3 px-4 font-mono">'acceptEdits'</td>
+                <td class="py-3 px-4">Claude Code 权限模式</td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+                <td class="py-3 px-4 font-mono text-primary-600">requireComponentFile</td>
+                <td class="py-3 px-4 font-mono">true</td>
+                <td class="py-3 px-4">要求必须定位到组件文件才允许修改</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 my-8">
+        <!-- Prerequisites -->
+        <div>
+            <h2 class="!mt-0"><i data-lucide="list-checks" class="w-6 h-6 text-primary-500"></i> 前置要求</h2>
+            <ul class="space-y-3 mt-4">
+                <li class="flex items-start gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+                    <span>本机已安装并登录 <a href="https://claude.ai/code" target="_blank" class="text-primary-600 hover:underline">Claude Code</a></span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+                    <span>目标项目为 Vite 开发环境</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+                    <span>基于 Vue3 框架开发（当前客户端依赖 Vue 组件实例信息）</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Security Boundaries -->
+        <div>
+            <h2 class="!mt-0"><i data-lucide="shield-check" class="w-6 h-6 text-primary-500"></i> 安全边界</h2>
+            <ul class="space-y-3 mt-4">
+                <li class="flex items-start gap-2">
+                    <i data-lucide="lock" class="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5"></i>
+                    <div><strong class="text-slate-800">只在启用模式注入：</strong>默认仅 <code>test</code> 模式生效。</div>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i data-lucide="lock" class="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5"></i>
+                    <div><strong class="text-slate-800">生产构建无残留：</strong>插件只作用于 Vite serve，绝不进入 production build。</div>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i data-lucide="lock" class="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5"></i>
+                    <div><strong class="text-slate-800">限制源码定位：</strong>组件文件必须在 <code>sourceRoot</code> 且扩展名在允许列表内。</div>
+                </li>
+                <li class="flex items-start gap-2">
+                    <i data-lucide="lock" class="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5"></i>
+                    <div><strong class="text-slate-800">禁止修改敏感路径：</strong>如 router、stores、apis、mock 等路径受保护。</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- File Structure -->
+    <h2 id="file-structure"><i data-lucide="folder-tree" class="w-6 h-6 text-primary-500"></i> 文件结构</h2>
+    <div class="code-block"><pre><code>tools/ai-style-editor/
+├── index.ts      <span class="text-slate-400"># Vite 插件入口</span>
+├── client.ts     <span class="text-slate-400"># 浏览器端脚本（悬浮按钮、选区逻辑）</span>
+├── prompt.ts     <span class="text-slate-400"># Claude prompt 构建</span>
+├── type.ts       <span class="text-slate-400"># TypeScript 类型定义</span>
+├── index.html    <span class="text-slate-400"># 配置指南文档</span>
+└── README.md     <span class="text-slate-400"># 项目说明</span></code></pre></div>
+
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-slate-200 bg-white mt-12 py-8 text-center text-slate-500 text-sm">
+    <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p>基于 MIT License 开源。</p>
+        <div class="flex items-center gap-4">
+            <a href="https://github.com/lavine-star/ai-style-editor" class="hover:text-slate-900 transition-colors">GitHub</a>
+            <a href="https://gitee.com/Lavines/ai-style-editor" class="hover:text-slate-900 transition-colors">Gitee</a>
+        </div>
+    </div>
+</footer>
+
+<!-- Initialize Lucide Icons -->
+<script>
+    lucide.createIcons();
+</script>
+</body>
 </html>

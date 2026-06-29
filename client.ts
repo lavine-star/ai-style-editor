@@ -256,6 +256,7 @@ function dtSetButtonPosition(button: HTMLElement, left: number, top: number) {
 function dtStartSelecting() {
   dtStatus = 'selecting'
   dtSelectedContext = null
+  dtSetButtonEditing(true)
   dtSetMessage('移动鼠标选择页面区域，点击后输入修改要求。')
   dtPanelElement()?.classList.remove('is-open')
   document.body.classList.add('dt-ai-style-selecting')
@@ -293,6 +294,7 @@ function dtHandleKeydown(event: KeyboardEvent) {
     event.stopImmediatePropagation()
     dtStatus = 'idle'
     dtSelectedContext = null
+    dtSetButtonEditing(false)
     document.body.classList.remove('dt-ai-style-selecting')
     dtOutlineElement()?.classList.remove('is-visible')
     dtTooltipElement()?.classList.remove('is-visible')
@@ -330,6 +332,7 @@ function dtOpenPanel(context: DtAiSelectedElementContext) {
 function dtClosePanel() {
   dtStatus = 'idle'
   dtSelectedContext = null
+  dtSetButtonEditing(false)
   document.body.classList.remove('dt-ai-style-selecting')
   dtOutlineElement()?.classList.remove('is-visible')
   dtTooltipElement()?.classList.remove('is-visible')
@@ -658,6 +661,10 @@ function dtButtonElement() {
   return document.querySelector<HTMLElement>('.dt-ai-style-button')
 }
 
+function dtSetButtonEditing(isEditing: boolean) {
+  dtButtonElement()?.classList.toggle('is-editing', isEditing)
+}
+
 function dtSetMessage(message: string) {
   const messageElement = document.querySelector<HTMLElement>('.dt-ai-style-message')
   if (messageElement) messageElement.textContent = message
@@ -715,8 +722,13 @@ function dtInjectStyle() {
       animation: dt-ai-style-pulse 1.8s ease-in-out infinite;
       transition: opacity .3s ease;
     }
-    .dt-ai-style-button:hover .dt-ai-style-button-glow {
+    .dt-ai-style-button:hover .dt-ai-style-button-glow,
+    .dt-ai-style-button.is-editing .dt-ai-style-button-glow {
       opacity: .75;
+    }
+    .dt-ai-style-button.is-editing .dt-ai-style-button-glow {
+      background: #22d3ee;
+      filter: blur(14px);
     }
     .dt-ai-style-button-surface {
       position: relative;
@@ -731,6 +743,11 @@ function dtInjectStyle() {
       box-shadow: 0 18px 36px rgb(99 102 241 / 30%);
       transform: translateZ(0);
       transition: transform .3s ease;
+    }
+    .dt-ai-style-button.is-editing .dt-ai-style-button-surface {
+      border-color: rgb(125 211 252 / 62%);
+      background: linear-gradient(135deg, #22d3ee, #2563eb 52%, #0f172a);
+      box-shadow: 0 18px 42px rgb(14 165 233 / 42%), 0 0 26px rgb(34 211 238 / 35%);
     }
     .dt-ai-style-button:hover .dt-ai-style-button-surface {
       transform: scale(1.1);
