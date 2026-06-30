@@ -157,7 +157,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     dtAiStyleEditorPlugin({
-      enabled: mode === 'test',
+      enabled: ['development', 'test'].includes(mode),
       projectName: '你的项目名',
       projectRules: `
         当前项目使用 Vue3 + TypeScript + Vite。
@@ -170,16 +170,11 @@ export default defineConfig(({ mode }) => ({
   ]
 }))</code></pre></div>
 
-    <h3>3. 添加启动脚本</h3>
-    <p>在 <code>package.json</code> 中添加 <code>test</code> 模式脚本：</p>
-    <div class="code-block"><pre><code>{
-  "scripts": {
-    "test": "vite --host 0.0.0.0 --mode test"
-  }
-}</code></pre></div>
-
-    <h3>4. 启动并使用</h3>
-    <div class="code-block"><pre><code>pnpm run test</code></pre></div>
+    <h3>3. 启动并使用</h3>
+    <p>开发模式直接启动即可：</p>
+    <div class="code-block"><pre><code>pnpm dev</code></pre></div>
+    <p>如项目使用 test 模式，也可以继续使用：</p>
+    <div class="code-block"><pre><code>pnpm test</code></pre></div>
     <div class="bg-slate-100 p-4 rounded-lg border border-slate-200 mt-4 flex items-start gap-3">
         <i data-lucide="info" class="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5"></i>
         <div class="text-sm text-slate-700">
@@ -207,7 +202,7 @@ export default defineConfig(({ mode }) => ({
             <tbody class="text-sm text-slate-600 divide-y divide-slate-100">
             <tr class="hover:bg-slate-50">
                 <td class="py-3 px-4 font-mono text-primary-600">enabled</td>
-                <td class="py-3 px-4 font-mono">config.mode === 'test'</td>
+                <td class="py-3 px-4 font-mono">development/test 模式默认启用</td>
                 <td class="py-3 px-4">控制是否启用插件</td>
             </tr>
             <tr class="hover:bg-slate-50">
@@ -280,7 +275,7 @@ export default defineConfig(({ mode }) => ({
             <ul class="space-y-3 mt-4">
                 <li class="flex items-start gap-2">
                     <i data-lucide="lock" class="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5"></i>
-                    <div><strong class="text-slate-800">只在启用模式注入：</strong>默认仅 <code>test</code> 模式生效。</div>
+                    <div><strong class="text-slate-800">只在启用模式注入：</strong>默认仅 <code>development</code> / <code>test</code> 模式生效。</div>
                 </li>
                 <li class="flex items-start gap-2">
                     <i data-lucide="lock" class="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5"></i>

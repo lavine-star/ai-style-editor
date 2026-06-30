@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     dtAiStyleEditorPlugin({
-      enabled: mode === 'test',
+      enabled: ['development', 'test'].includes(mode),
       projectName: '你的项目名',
       projectRules: `
         当前项目使用 Vue3 + TypeScript + Vite。
@@ -51,22 +51,18 @@ export default defineConfig(({ mode }) => ({
 }))
 ```
 
-### 3. 添加启动脚本
+### 3. 启动并使用
 
-在 `package.json` 中添加 test 模式脚本：
-
-```json
-{
-  "scripts": {
-    "test": "vite --host 0.0.0.0 --mode test"
-  }
-}
-```
-
-### 4. 启动并使用
+开发模式直接启动即可：
 
 ```bash
-pnpm run test
+pnpm dev
+```
+
+如项目使用 test 模式，也可以继续使用：
+
+```bash
+pnpm test
 ```
 
 浏览器会显示悬浮按钮，点击后：
@@ -79,7 +75,7 @@ pnpm run test
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `enabled` | `config.mode === 'test'` | 控制是否启用插件 |
+| `enabled` | `development/test 模式默认启用` | 控制是否启用插件 |
 | `projectName` | `当前项目` | 项目名称，帮助 Claude 理解上下文 |
 | `projectRules` | 通用前端规范 | 项目约束规则，限制 AI 修改范围 |
 | `sourceRoot` | `src` | 源码目录，其他目录会被忽略 |
@@ -97,7 +93,7 @@ pnpm run test
 
 ## 安全边界
 
-- **只在启用模式注入**：默认仅 `test` 模式生效
+- **只在启用模式注入**：默认仅 `development` / `test` 模式生效
 - **生产构建无残留**：插件只作用于 Vite serve，不进入 production build
 - **限制源码定位**：组件文件必须在 `sourceRoot` 且扩展名在允许列表内
 - **禁止修改敏感路径**：router、stores、apis、mock 等路径受保护

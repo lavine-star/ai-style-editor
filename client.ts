@@ -70,7 +70,7 @@ function dtInitAiStyleEditor() {
       <header class="dt-ai-style-panel-header">
         <div>
           <div class="dt-ai-style-panel-title">AI 样式调试</div>
-          <div class="dt-ai-style-panel-subtitle">仅 pnpm test 模式可用，拖动标题区域可移动</div>
+          <div class="dt-ai-style-panel-subtitle">pnpm dev / test 模式可用，拖动标题区域可移动</div>
         </div>
         <button class="dt-ai-style-close" type="button">关闭</button>
       </header>
@@ -511,7 +511,7 @@ async function dtSubmitEdit() {
     dtSetMessage(data.summary || data.message || '源码已修改，请查看页面热更新。')
   } catch (err) {
     dtStatus = 'error'
-    dtSetMessage(err instanceof Error ? err.message : '本地 AI 样式调试服务不可用，请确认正在使用 pnpm test 启动。')
+    dtSetMessage(err instanceof Error ? err.message : '本地 AI 样式调试服务不可用，请确认正在使用 pnpm dev 或 pnpm test 启动。')
   } finally {
     if (submit) submit.disabled = false
   }
