@@ -1,0 +1,17 @@
+# Generated media and test artifacts stay local.
+/outputs/
+/test-artifacts/
+
+# Local dependencies, caches, and machine-specific files.
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+*.log
+
+# Local credentials and environment configuration.
+.env
+.env.*
+!.env.example
