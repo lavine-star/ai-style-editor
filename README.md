@@ -171,6 +171,21 @@ python tests/verify-real-video.py /absolute/path/source.mp4 outputs/green-screen
 
 最后一个检查针对本次原片：从独立解码的源帧确定明确绿幕区域，逐帧检查导出 GIF 的这些像素 Alpha 为 0、帧处置方式为清除旧帧，并检查人物头发 / 肤色 / 衣服 / 裤子的采样点及完整时长。人物采样位置针对这段素材，换其他视频时需重新标注，不能把此检查当作通用人物分割。
 
+### 本地图片序列预览
+
+12 张连续姿势图按文件名顺序作为关键帧，使用运动补偿插值生成 12 fps、6 秒、72 帧的预览，再通过本项目的绿幕透明流程导出 GIF。预览尺寸为 848×1120，原始图片不修改。关键帧之间物体形状或位置变化过大时，插值仍可能出现局部形变，并非 AI 重新生成动作。
+
+这组素材自动识别为偏青绿幕，抠图及边缘清理会收紧绿色色相上限，避免把人物青蓝服饰一起移除。普通纯绿幕维持原来的绿光清理范围。
+
+本地生成文件存在时，可打开 `/?preview=outputs/avatar-12fps-6s.json`，在原页面查看透明 GIF、切换绿幕原视频并下载。普通首页保持原来的默认参数和示例。预览入口只读取本项目 `outputs/` 内的 JSON、MP4 和 GIF，不接受外部地址。
+
+```bash
+node tests/local-preview.cjs
+python tests/verify-sequence.py outputs/avatar-12fps-6s-green.mp4 outputs/avatar-12fps-6s-transparent.gif
+```
+
+上述测试依赖本地生成的序列动画文件；产物及预览清单不随源码提交。
+
 ## 许可证
 
 MIT License - 可自由使用和修改

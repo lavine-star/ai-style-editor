@@ -202,6 +202,29 @@ const { chromium } = require('playwright');
       assert.ok(result.pastelShirt[1] > result.pastelShirt[0] + 50);
       assert.ok(result.subject.every(pixel => pixel[3] === 255), `character erased at threshold ${result.threshold}`);
     }
+    const turquoise = await page.evaluate(() => {
+      return [30, 80, 200, 255].map(threshold => {
+        const test = document.createElement('canvas');
+        test.width = test.height = 64;
+        const context = test.getContext('2d');
+        const key = { r: 43, g: 227, b: 114 };
+        context.fillStyle = 'rgb(43,227,114)'; context.fillRect(0, 0, 64, 64);
+        context.fillStyle = '#72e8bc'; context.fillRect(52, 4, 8, 8);
+        context.fillStyle = '#111820'; context.fillRect(16, 16, 32, 40);
+        context.fillStyle = '#10dcc3'; context.fillRect(24, 24, 16, 8);
+        // Saturated turquoise at the silhouette must also survive fringe cleanup.
+        context.fillRect(8, 16, 8, 24);
+        const frame = context.getImageData(0, 0, 64, 64);
+        removeBackground(frame, key, threshold, false);
+        let mismatch = 0;
+        for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+          const foreground = (x >= 16 && x < 48 && y >= 16 && y < 56) || (x >= 8 && x < 16 && y >= 16 && y < 40);
+          if (frame.data[(y * 64 + x) * 4 + 3] !== (foreground ? 255 : 0)) mismatch++;
+        }
+        return { threshold, mismatch };
+      });
+    });
+    for (const result of turquoise) assert.equal(result.mismatch, 0, `turquoise clothing lost on cyan-green screen at threshold ${result.threshold}`);
     assert.deepEqual(errors, []);
     console.log('PASS: exact transparency at quality 1/10/30; green preserved on black background; closed gaps removed; optional protection; empty frame; keep-background mode; detached green effects and pale remnants transparent, not gray; zero tolerance preserved; automatic green key; letterboxing; exact expected character/background masks at thresholds 30/80/200/255.');
     console.log(JSON.stringify(results, null, 2));

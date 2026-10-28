@@ -362,10 +362,13 @@ function removeBackground(imageData, color, threshold, protect) {
   const count = width * height, limit = threshold * threshold;
   const channel = screenChannel(color);
   const keyHue = colorHue(color.r, color.g, color.b);
+  // A cyan-leaning green screen is still distinct from the character's
+  // saturated turquoise trim. Do not classify all cyan as green in that case.
+  const greenHueLimit = keyHue >= 135 ? 160 : 184;
   const matches = (pixel) => {
     const i = pixel * 4;
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    if (channel === 1 && threshold > 0) return matchesGreenScreen(r, g, b, threshold);
+    if (channel === 1 && threshold > 0) return colorHue(r, g, b) <= greenHueLimit && matchesGreenScreen(r, g, b, threshold, greenHueLimit === 160);
     if (channel >= 0) {
       // A large RGB tolerance is not permission to erase white hair, skin,
       // gray fabric or cyan/blue clothing. Require the actual screen hue.
@@ -383,7 +386,7 @@ function removeBackground(imageData, color, threshold, protect) {
   let removed = 0;
   if (!protect) {
     for (let pixel = 0; pixel < count; pixel++) if (matches(pixel)) { clear(pixel); removed++; }
-    if (removed && channel === 1 && threshold > 0) removed += removeGreenFringe(imageData);
+    if (removed && channel === 1 && threshold > 0) removed += removeGreenFringe(imageData, greenHueLimit);
     if (removed) removeScreenSpill(imageData, color);
     return removed;
   }
@@ -409,13 +412,13 @@ function removeBackground(imageData, color, threshold, protect) {
   return removed;
 }
 
-function matchesGreenScreen(r, g, b, threshold) {
+function matchesGreenScreen(r, g, b, threshold, cyanGreenScreen = false) {
   if (g <= r || g <= b) return false;
   const hue = colorHue(r, g, b);
   if (hue < 75 || hue >= 180) return false;
   const saturation = (g - Math.min(r, b)) / g;
   const tolerance = Math.min(1, threshold / 255);
-  if (hue <= 150) {
+  if (hue <= (cyanGreenScreen ? 160 : 150)) {
     // Chroma rather than distance from one RGB sample handles pale green,
     // shadows and uneven lighting without treating low-chroma hair as green.
     return saturation >= .30 - .18 * tolerance &&
@@ -426,7 +429,7 @@ function matchesGreenScreen(r, g, b, threshold) {
   return saturation >= .56 - .06 * tolerance && g - r >= 35 && g - b >= 2;
 }
 
-function removeGreenFringe(imageData) {
+function removeGreenFringe(imageData, hueLimit = 184) {
   const { data, width, height } = imageData;
   const transparent = new Uint8Array(width * height);
   for (let pixel = 0; pixel < transparent.length; pixel++) transparent[pixel] = data[pixel * 4 + 3] < 128;
@@ -438,7 +441,7 @@ function removeGreenFringe(imageData) {
       const r = data[offset], g = data[offset + 1], b = data[offset + 2];
       if (g < r + 6 || g < b - 6) continue;
       const hue = colorHue(r, g, b), saturation = (Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(r, g, b);
-      if (hue < 75 || hue > 184 || saturation < (hue <= 150 ? .10 : .20)) continue;
+      if (hue < 75 || hue > hueLimit || saturation < (hue <= 150 ? .10 : .20)) continue;
       const weakCyan = hue > 150 && saturation < .40;
       let touchesBackground = false;
       for (let dy = -2; dy <= 2 && !touchesBackground; dy++) {
@@ -567,7 +570,9 @@ async function startConversion(force = false) {
     if (choice === 'black') background = { r: 0, g: 0, b: 0 };
     if (choice === '#00ff00') background = { r: 0, g: 255, b: 0 };
     for (let frame = 0; frame < frames; frame++) {
-      const time = Math.min(frame / fps, state.duration - .0001);
+      // Seek just inside the frame, not on its floating-point timestamp
+      // boundary, where the decoder can return the preceding frame twice.
+      const time = Math.min(frame / fps + .0001, state.duration - .0001);
       await seekTo(time, controller.signal);
       if (controller.signal.aborted) throw abortError();
       ctx.drawImage(video, 0, 0, width, height);
@@ -611,7 +616,7 @@ function showResult() {
   $('gifPreview').src = result.url;
   $('gifPreview').alt = result.demo ? '透明背景 GIF 示例动图' : '根据所选视频制作的 GIF 动图';
   $('resultBadge').textContent = result.demo ? '示例动图' : result.transparent ? '透明 GIF 已生成' : 'GIF 已生成';
-  $('resultDimensions').textContent = `${result.width}×${result.height} · ${result.duration.toFixed(2)} 秒`;
+  $('resultDimensions').textContent = `${result.width}×${result.height} · ${result.duration.toFixed(2)} 秒${result.fps ? ` · ${result.fps} fps · ${result.frames} 帧` : ''}`;
   $('resultSize').textContent = fileSize(result.blob.size);
   $('resultInfo').hidden = false; $('resultActions').hidden = false;
   $('previewNote').textContent = !result.demo && state.mode === 'color' && !result.transparent ?
@@ -671,6 +676,56 @@ $('demoButton').onclick = async () => {
   finally { $('demoButton').disabled = false; }
 };
 
+// Local, generated previews can be opened in the normal editor without
+// replacing the bundled example or changing the default conversion settings.
+async function loadLocalPreview() {
+  const path = new URLSearchParams(location.search).get('preview');
+  if (!path) return;
+  const revision = state.revision;
+  const directory = new URL('outputs/', document.baseURI);
+  const localUrl = (value, base, extension) => {
+    if (typeof value !== 'string') throw new Error('预览文件路径无效。');
+    const url = new URL(value, base);
+    if (url.origin !== directory.origin || !url.pathname.startsWith(directory.pathname) || !url.pathname.endsWith(extension)) {
+      throw new Error('仅支持本项目 outputs 目录内的预览文件。');
+    }
+    return url;
+  };
+  const read = async (url, json = false) => {
+    const response = await fetch(url, { cache: 'no-cache' });
+    if (!response.ok) throw new Error('预览文件暂不可用，请确认本地动画已生成。');
+    return json ? response.json() : response.blob();
+  };
+  try {
+    const manifestUrl = localUrl(path, document.baseURI, '.json');
+    const preview = await read(manifestUrl, true);
+    if (!Number.isInteger(preview.fps) || preview.fps < 5 || preview.fps > 30 ||
+        !Number.isInteger(preview.frames) || preview.frames < 1 ||
+        !Number.isFinite(preview.duration) || preview.duration <= 0 ||
+        Math.abs(preview.frames / preview.fps - preview.duration) > .01) {
+      throw new Error('动画预览的帧率或时长信息无效。');
+    }
+    const sourceUrl = localUrl(preview.video, manifestUrl, '.mp4');
+    const gifUrl = localUrl(preview.gif, manifestUrl, '.gif');
+    const [source, blob] = await Promise.all([read(sourceUrl), read(gifUrl)]);
+    if (state.revision !== revision || state.file || state.busy) return;
+    const file = new File([source], sourceUrl.pathname.split('/').pop(), { type: 'video/mp4' });
+    await chooseFile(file);
+    if (state.file !== file || state.loading || state.busy || state.revision !== revision + 1) return;
+    if (Math.abs(state.duration - preview.duration) > .05) throw new Error('预览动画与原视频时长不一致。');
+    $('fps').value = String(preview.fps);
+    $('scale').value = '1';
+    updateRangeLabels();
+    state.result = {
+      blob, url: URL.createObjectURL(blob), width: video.videoWidth, height: video.videoHeight,
+      duration: preview.duration, fps: preview.fps, frames: preview.frames, transparent: true, demo: false
+    };
+    showResult(); setError(); setBusy(false);
+  } catch (error) {
+    if (state.revision === revision || state.revision === revision + 1) setError(error.message);
+  }
+}
+
 // Optional design controls stay hidden in the finished interface.
 window.addEventListener('message', event => {
   if (event.source !== window.parent) return;
@@ -699,3 +754,4 @@ updateRangeLabels();
 updateBackgroundHint();
 updateSteps(1);
 setBusy(false);
+loadLocalPreview();
