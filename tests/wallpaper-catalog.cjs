@@ -16,6 +16,10 @@ assert.ok(definition, 'Static hosts need an embedded wallpaper catalog.');
 const catalog = vm.runInNewContext(definition[1], {}, { timeout: 1000 });
 assert.ok(catalog.length > 0);
 assert.equal(new Set(catalog.map(item => item.file)).size, catalog.length);
+const gifFiles = fs.readdirSync(path.join(root, 'assets', 'view'))
+  .filter(file => /\.gif$/i.test(file)).sort();
+assert.deepEqual(Array.from(catalog, item => item.file).sort(), gifFiles,
+  'The static catalog must include every GIF so GitHub Pages does not omit images.');
 for (const item of catalog) {
   assert.match(item.file, /^[^/\\]+\.gif$/i);
   const source = path.join(root, 'assets', 'view', item.file);
@@ -36,4 +40,21 @@ assert.doesNotMatch(html, /<script[^>]+src=["'](?:app|gif)\.js/);
 assert.doesNotMatch(html, /id=["'](?:deviceControl|previewStage|brightness|clockToggle|tweaksPanel)["']/);
 assert.match(html, /download\.download = item\.file/);
 assert.match(html, /new IntersectionObserver/);
-console.log('PASS: JavaScript syntax, ' + catalog.length + ' GIF metadata records, PNG posters, lazy loading, original downloads, and simplified gallery.');
+const loader = html.match(/async function loadGallery\(\) \{[\s\S]+?\n\}\n(?=reducedMotion\.addEventListener)/);
+assert.ok(loader, 'Gallery loader must be available for static-host regression testing.');
+const rendered = [];
+const loading = vm.runInNewContext(loader[0] + '\nloadGallery();', {
+  AbortController, setTimeout, clearTimeout, catalog,
+  directory: new URL('https://example.invalid/ai-style-editor/assets/view/'),
+  fetch: async () => ({ ok: false, status: 404 }),
+  render: items => rendered.push(items)
+}, { timeout: 1000 });
+Promise.resolve(loading).then(() => {
+  assert.equal(rendered.length, 1);
+  assert.deepEqual(Array.from(rendered[0], item => item.file).sort(), gifFiles,
+    'A missing directory listing on GitHub Pages must still render every GIF.');
+  console.log('PASS: JavaScript syntax, all ' + catalog.length + ' GIFs, PNG posters, static-host fallback, lazy loading, original downloads, and simplified gallery.');
+}).catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

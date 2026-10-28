@@ -61,7 +61,7 @@
 <script>
 'use strict';
 const directory = new URL('assets/view/', document.baseURI);
-// Fallback for static servers that do not expose directory listings.
+// GitHub Pages has no directory listing; keep this catalog in sync with assets/view.
 const catalog = [
   { file: 'lv_0_20261021210816.gif', width: 1074, height: 640, bytes: 20232799 },
   { file: 'petal_20261028_105113.gif', width: 776, height: 582, bytes: 71293643 },
@@ -71,7 +71,8 @@ const catalog = [
   { file: 'Image_1793014934366_245.gif', width: 960, height: 720, bytes: 49437143 },
   { file: 'Image_1793014970311_427.gif', width: 1440, height: 1080, bytes: 52018642 },
   { file: 'Image_1793014985391_112.gif', width: 1440, height: 1080, bytes: 52206667 },
-  { file: 'Image_1793015127027_903.gif', width: 1440, height: 1080, bytes: 46858130 }
+  { file: 'Image_1793015127027_903.gif', width: 1440, height: 1080, bytes: 46858130 },
+  { file: 'Image_1793011791630_229.gif', width: 1934, height: 1080, bytes: 55843021 }
 ].map(item => ({ ...item, poster: 'assets/wallpaper-posters/' + item.file.replace(/\.gif$/i, '.png') }));
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const gallery = document.getElementById('gallery');
