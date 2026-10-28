@@ -1,0 +1,324 @@
+<!doctype html>
+<!--
+  Assumptions: mobile-first working tool; all conversion stays in this browser with gif.js; no account/cloud provider.
+  DESIGN AXES: light-minimal / asymmetric workspace / interactive editor / real output / clean solid canvas.
+  Palette: warm white, charcoal, persimmon. Type: system Chinese sans, fluid hierarchy.
+  Components: file dropzone, original parameter sliders, before/after preview, real progress, native save dialog.
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7f9">
+  <meta name="description" content="在浏览器本地将视频转换为透明 GIF。支持手机和电脑，无需上传素材。">
+  <title>帧刻 · 把视频变成 GIF</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%23ff653f'/%3E%3Cpath d='M14 13h20v7H21v7h13v8H14z' fill='white'/%3E%3C/svg%3E">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    html, body { width: 100%; min-height: 100%; overflow-x: hidden; }
+    body { line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    img, picture, video, svg { display: block; max-width: 100%; }
+    input, button, textarea, select { font: inherit; }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; border: none; background: none; }
+    :root {
+      --c-bg: #f6f7f9; --c-surface: #fff; --c-text: #252830; --c-muted: #737985;
+      --c-accent: #ed542f; --c-accent-soft: #fff1eb; --c-border: #e5e7eb;
+      --c-quiet: #f7f8fa; --c-success: #22765b; --c-danger: #b53a31;
+      --t-xs: clamp(.6875rem,.68rem + .03vw,.75rem); --t-sm: clamp(.75rem,.73rem + .1vw,.8125rem);
+      --t-base: clamp(.875rem,.86rem + .08vw,.9375rem); --t-lg: clamp(1rem,.96rem + .2vw,1.125rem);
+      --t-xl: clamp(1.25rem,1.1rem + .5vw,1.5rem); --t-title: clamp(1.875rem,1.45rem + 1.8vw,2.75rem);
+      --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px;
+      --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 20px; --r-full: 9999px;
+      --ease: cubic-bezier(.2,.7,.2,1); --dur-fast: 150ms; --dur-base: 250ms;
+    }
+    body { background: var(--c-bg); color: var(--c-text); font-family: -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; font-size: var(--t-base); padding-bottom: env(safe-area-inset-bottom); }
+    :focus-visible { outline: 3px solid var(--c-accent); outline-offset: 3px; border-radius: var(--r-sm); }
+    button, a, input, select { -webkit-tap-highlight-color: transparent; }
+    button { color: inherit; }
+    button:disabled { cursor: not-allowed; opacity: .42; }
+    button:not(:disabled), a { transition: color var(--dur-fast), background var(--dur-fast), border-color var(--dur-fast), transform var(--dur-fast) var(--ease); }
+    button:not(:disabled):active { transform: translateY(1px); }
+    [hidden] { display: none !important; }
+    .icon { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .container { width: 100%; max-width: 1120px; margin-inline: auto; padding-inline: var(--s-5); }
+    .site-header { border-bottom: 1px solid var(--c-border); background: var(--c-surface); }
+    .header-row { display: flex; align-items: center; justify-content: space-between; min-height: 76px; gap: var(--s-4); }
+    .brand { display: inline-flex; align-items: center; gap: var(--s-3); min-height: 44px; }
+    .brand-mark { width: 36px; height: 36px; border-radius: 10px; background: var(--c-text); color: white; display: grid; place-items: center; }
+    .brand-mark .icon { width: 23px; height: 23px; stroke-width: 2; }
+    .brand-name { font-size: var(--t-xl); font-weight: 750; letter-spacing: -.04em; }
+    .brand-sub { font-size: var(--t-xs); letter-spacing: .08em; color: var(--c-muted); padding-left: var(--s-3); border-left: 1px solid var(--c-border); }
+    .text-button { display: inline-flex; gap: var(--s-2); align-items: center; justify-content: center; min-height: 44px; font-size: var(--t-sm); color: var(--c-muted); }
+    .text-button:hover { color: var(--c-accent); }
+    .intro { padding-block: var(--s-8) var(--s-6); }
+    .intro-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+    h1 { font-size: var(--t-title); line-height: 1.2; font-weight: 750; letter-spacing: -.05em; }
+    h1 span { color: var(--c-accent); }
+    .intro-copy { margin-top: var(--s-3); color: var(--c-muted); max-width: 65ch; }
+    .connection { display: inline-flex; gap: var(--s-2); align-items: center; font-size: var(--t-xs); white-space: nowrap; color: var(--c-muted); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .connection[data-online="true"] { color: var(--c-success); }
+    .steps { display: flex; gap: var(--s-4); align-items: center; margin-top: var(--s-6); font-size: var(--t-sm); color: var(--c-muted); }
+    .step { display: inline-flex; align-items: center; gap: var(--s-2); }
+    .step-number { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid var(--c-border); background: var(--c-surface); border-radius: 50%; font-size: var(--t-xs); }
+    .step.current { color: var(--c-text); }
+    .step.current .step-number { color: white; background: var(--c-text); border-color: var(--c-text); }
+    .step-line { height: 1px; width: 24px; background: var(--c-border); }
+    /* Zero-minimum tracks keep intrinsic input/media sizes from widening mobile panels. */
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+    .workspace > * { min-width: 0; max-width: 100%; }
+    .panel { min-width: 0; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg); }
+    .editor { padding: var(--s-5); }
+    .section-label { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); margin-bottom: var(--s-4); }
+    h2 { font-size: var(--t-lg); letter-spacing: -.02em; font-weight: 650; line-height: 1.3; }
+    .section-number { margin-right: var(--s-2); color: var(--c-muted); font-size: var(--t-xs); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .tiny { color: var(--c-muted); font-size: var(--t-xs); }
+    .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1.5px dashed #d8dce3; border-radius: var(--r-md); background: var(--c-quiet); min-height: 204px; padding: var(--s-6) var(--s-4); transition: background var(--dur-base), border-color var(--dur-base); }
+    .dropzone.dragging { background: var(--c-accent-soft); border-color: var(--c-accent); }
+    .upload-symbol { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid var(--c-border); border-radius: var(--r-md); background: var(--c-surface); margin-bottom: var(--s-3); box-shadow: 0 3px 0 #e9ebef; }
+    .upload-symbol .icon { width: 26px; height: 26px; }
+    .drop-title { font-size: var(--t-base); font-weight: 550; }
+    .drop-copy { font-size: var(--t-xs); color: var(--c-muted); margin-top: var(--s-1); }
+    .button { min-height: 44px; padding: var(--s-3) var(--s-5); border-radius: var(--r-sm); display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); white-space: nowrap; font-weight: 600; font-size: var(--t-sm); align-self: flex-start; }
+    .button-dark { background: var(--c-text); color: white; }
+    .button-dark:hover { background: #40444e; }
+    .button-outline { border: 1px solid var(--c-border); background: var(--c-surface); }
+    .button-outline:hover { background: var(--c-quiet); }
+    .choose-button { margin-top: var(--s-4); align-self: center; min-height: 40px; }
+    .selected-file { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4); border: 1px solid var(--c-border); border-radius: var(--r-md); background: var(--c-quiet); }
+    .file-symbol { color: var(--c-accent); background: var(--c-accent-soft); padding: var(--s-3); border-radius: var(--r-sm); }
+    .file-details { min-width: 0; flex: 1; }
+    .filename { font-size: var(--t-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-meta { color: var(--c-muted); font-size: var(--t-xs); margin-top: var(--s-1); }
+    .icon-button { width: 44px; height: 44px; display: grid; place-items: center; border-radius: var(--r-sm); flex-shrink: 0; }
+    .icon-button:hover { background: var(--c-border); }
+    .editor-section { margin-top: var(--s-6); padding-top: var(--s-6); border-top: 1px solid var(--c-border); }
+    .segmented { display: flex; padding: var(--s-1); gap: var(--s-1); border-radius: var(--r-sm); background: var(--c-quiet); border: 1px solid var(--c-border); }
+    .segmented button { min-width: 0; min-height: 40px; display: flex; align-items: center; justify-content: center; flex: 1 1 0; gap: var(--s-2); padding-inline: var(--s-2); border-radius: 6px; font-size: var(--t-sm); color: var(--c-muted); }
+    .segmented button[aria-pressed="true"] { color: var(--c-text); background: var(--c-surface); box-shadow: 0 1px 4px #25283014; font-weight: 600; }
+    .segmented .icon { width: 16px; height: 16px; }
+    .helper { margin-top: var(--s-2); font-size: var(--t-xs); color: var(--c-muted); line-height: 1.6; max-width: 65ch; }
+    label, summary { font-size: var(--t-sm); }
+    details { margin-top: var(--s-4); }
+    summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: var(--s-2); color: var(--c-muted); list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary .icon { width: 16px; height: 16px; }
+    details[open] summary .icon { transform: rotate(90deg); }
+    .advanced { padding: var(--s-3) 0 var(--s-1); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+    .advanced > * { min-width: 0; }
+    .advanced select, .background-choice select { min-width: 0; max-width: 100%; width: 100%; min-height: 44px; border: 1px solid var(--c-border); border-radius: var(--r-sm); padding-inline: var(--s-3); background: var(--c-surface); color: var(--c-text); margin-top: var(--s-2); }
+    .background-choice { margin-top: var(--s-4); }
+    .range-heading { display: flex; justify-content: space-between; align-items: center; }
+    input[type="range"] { min-width: 0; width: 100%; accent-color: var(--c-accent); min-height: 36px; }
+    .checkbox-row { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; }
+    input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--c-accent); }
+    .preview-panel { overflow: hidden; }
+    .preview-header { padding: var(--s-5); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); }
+    .preview-tabs { min-width: 0; display: flex; gap: var(--s-1); font-size: var(--t-xs); }
+    .preview-tabs button { min-height: 36px; padding-inline: var(--s-3); border-radius: 6px; color: var(--c-muted); }
+    .preview-tabs button[aria-pressed="true"] { background: var(--c-quiet); color: var(--c-text); font-weight: 550; }
+    .stage { min-width: 0; width: calc(100% - 2 * var(--s-5)); margin-inline: var(--s-5); min-height: 0; aspect-ratio: 1; position: relative; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; overflow: hidden; border: 1px solid var(--c-border); border-radius: var(--r-md); background: #f0f1f4; }
+    .stage[data-background="checker"], .save-image-wrap { background-color: #fff; background-image: conic-gradient(#e8eaee 25%,transparent 0 50%,#e8eaee 0 75%,transparent 0); background-size: 24px 24px; }
+    .stage[data-background="white"] { background: white; }
+    .stage[data-background="black"] { background: #292c34; }
+    .stage img, .stage video { position: absolute; inset: 0; min-width: 0; max-width: 100%; width: 100%; height: 100%; object-fit: contain; }
+    .stage-placeholder { color: var(--c-muted); text-align: center; padding: var(--s-6); }
+    .stage-placeholder .icon { width: 48px; height: 48px; margin: 0 auto var(--s-4); stroke-width: 1; }
+    .stage-tag { position: absolute; left: var(--s-3); top: var(--s-3); max-width: calc(100% - 24px); overflow-wrap: anywhere; font-size: var(--t-xs); background: #ffffffec; color: #535964; padding: var(--s-1) var(--s-2); border: 1px solid #ffffff; border-radius: 6px; z-index: 1; }
+    .preview-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); padding: var(--s-3) var(--s-5); }
+    .swatches { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); }
+    .swatch { width: 36px; height: 36px; padding: var(--s-2); display: grid; place-items: center; border-radius: var(--r-sm); border: 1px solid transparent; }
+    .swatch[aria-pressed="true"] { border-color: #a8adb7; }
+    .swatch span { display: block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid #c7cbd2; }
+    .swatch[data-background="checker"] span { background: conic-gradient(#d7dae0 25%,#fff 0 50%,#d7dae0 0 75%,#fff 0); background-size: 8px 8px; }
+    .swatch[data-background="white"] span { background: white; }
+    .swatch[data-background="black"] span { background: #292c34; }
+    .preview-note { border-top: 1px solid var(--c-border); padding: var(--s-4) var(--s-5); font-size: var(--t-xs); color: var(--c-muted); display: flex; align-items: flex-start; gap: var(--s-2); }
+    .preview-note .icon { width: 16px; height: 16px; margin-top: 2px; }
+    .preview-note p { max-width: 65ch; }
+    .result-info { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding: var(--s-4) var(--s-5); border-top: 1px solid var(--c-border); font-size: var(--t-xs); color: var(--c-muted); }
+    .result-info strong { color: var(--c-success); display: flex; align-items: center; gap: var(--s-1); font-weight: 550; }
+    .result-info .icon { width: 16px; height: 16px; }
+    .result-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); padding: 0 var(--s-5) var(--s-5); }
+    .result-actions .button-dark { flex: 1; }
+    .info-section { padding: var(--s-5) var(--s-1); display: flex; align-items: flex-start; gap: var(--s-3); }
+    .info-section > .icon { width: 18px; height: 18px; margin-top: 2px; color: var(--c-muted); }
+    .info-section strong { display: block; font-size: var(--t-sm); font-weight: 550; }
+    .info-section > div { min-width: 0; }
+    .info-section p { color: var(--c-muted); margin-top: var(--s-1); font-size: var(--t-xs); max-width: 65ch; overflow-wrap: anywhere; }
+    .action-area { margin-top: var(--s-5); }
+    .primary-button { width: 100%; min-height: 50px; background: var(--c-accent); color: white; font-size: var(--t-base); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; gap: var(--s-2); font-weight: 600; }
+    .primary-button:hover:not(:disabled) { background: oklch(from var(--c-accent) calc(l * .92) c h); }
+    .action-hint { margin-top: var(--s-2); text-align: center; font-size: var(--t-xs); color: var(--c-muted); }
+    .progress-box { border: 1px solid var(--c-border); border-radius: var(--r-md); padding: var(--s-4); margin-top: var(--s-5); }
+    .progress-heading { display: flex; justify-content: space-between; gap: var(--s-3); font-size: var(--t-sm); }
+    .progress-heading strong { font-weight: 550; }
+    .progress-track { height: 5px; border-radius: var(--r-full); background: var(--c-border); margin-top: var(--s-3); overflow: hidden; }
+    .progress-fill { width: 0; height: 100%; background: var(--c-accent); transition: width var(--dur-base); }
+    .progress-bottom { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-1); }
+    .error-box { padding: var(--s-3) var(--s-4); border-radius: var(--r-sm); background: #fff1ee; color: var(--c-danger); font-size: var(--t-sm); margin-top: var(--s-4); }
+    footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); padding-block: var(--s-6) var(--s-8); color: var(--c-muted); font-size: var(--t-xs); }
+    .footer-copy { display: flex; gap: var(--s-2); align-items: center; }
+    .footer-copy .icon { width: 14px; height: 14px; }
+    dialog { border: 1px solid var(--c-border); border-radius: var(--r-lg); width: calc(100% - 32px); max-width: 448px; max-height: calc(100dvh - 40px); padding: 0; margin: auto; background: var(--c-surface); color: var(--c-text); overflow-y: auto; box-shadow: 0 24px 100px #181a3033; }
+    dialog::backdrop { background: #161a2866; backdrop-filter: blur(4px); }
+    .dialog-header { padding: var(--s-5) var(--s-5) var(--s-3); display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+    .dialog-body { padding: 0 var(--s-5) var(--s-5); }
+    .dialog-body p { color: var(--c-muted); font-size: var(--t-sm); max-width: 65ch; }
+    .save-image-wrap { margin-top: var(--s-4); border: 1px solid var(--c-border); border-radius: var(--r-md); overflow: hidden; }
+    .save-image-wrap img { width: 100%; height: 220px; object-fit: contain; -webkit-touch-callout: default; user-select: auto; }
+    .save-caption { text-align: center; font-size: var(--t-xs); color: var(--c-muted); margin-top: var(--s-2); }
+    .dialog-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: var(--s-3); margin-top: var(--s-5); }
+    .dialog-actions > .button { min-width: 0; width: 100%; }
+    .save-message { margin-top: var(--s-3); font-size: var(--t-xs); color: var(--c-muted); }
+    .guide-list { list-style: none; display: grid; gap: var(--s-4); margin-top: var(--s-4); }
+    .guide-list li { font-size: var(--t-sm); }
+    .guide-list strong { display: block; font-weight: 600; margin-bottom: var(--s-1); }
+    .notice { background: var(--c-accent-soft); padding: var(--s-3); border-radius: var(--r-sm); margin-top: var(--s-4); font-size: var(--t-xs); color: var(--c-text); }
+    .tweaks { position: fixed; bottom: var(--s-5); right: var(--s-5); z-index: 10; background: var(--c-surface); border: 1px solid var(--c-border); padding: var(--s-4); width: 240px; border-radius: var(--r-md); box-shadow: 0 8px 40px #0002; display: grid; gap: var(--s-3); }
+    .tweaks label { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); }
+    .tweaks input[type="color"] { width: 44px; height: 32px; border: 0; }
+    @media (min-width: 760px) {
+      .container { padding-inline: var(--s-8); }
+      .intro { padding-block: var(--s-10) var(--s-6); }
+      .workspace { grid-template-columns: minmax(0,.85fr) minmax(0,1.25fr); gap: var(--s-6); }
+      .editor { padding: var(--s-6); }
+      .stage { width: calc(100% - 2 * var(--s-6)); aspect-ratio: 1.18; }
+      .preview-header { padding: var(--s-6); }
+      .stage { margin-inline: var(--s-6); }
+      .preview-tools { padding-inline: var(--s-6); }
+      .side-column { position: sticky; top: var(--s-6); }
+    }
+    @media (max-width: 759px) {
+      .brand-sub { display: none; }
+      .header-row { min-height: 64px; }
+      .intro-top { align-items: flex-start; }
+      .connection { font-size: 0; width: 12px; padding-top: var(--s-3); }
+      .connection .status-dot { width: 8px; height: 8px; }
+      .intro-copy { font-size: var(--t-sm); }
+      .steps { justify-content: space-between; gap: var(--s-2); }
+      .step-line { width: 16px; }
+      .dropzone { min-height: 176px; }
+      body { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+      .action-area { position: fixed; bottom: 0; left: 0; right: 0; z-index: 5; margin: 0; padding: var(--s-3) var(--s-5) calc(var(--s-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--c-border); background: #ffffffed; backdrop-filter: blur(14px); }
+      .action-hint { margin-top: var(--s-1); }
+      .primary-button { min-height: 48px; }
+      .editor-section { padding-top: var(--s-5); margin-top: var(--s-5); }
+      footer { padding-top: var(--s-2); }
+      .preview-tabs button { padding-inline: var(--s-2); }
+      .preview-tabs button, .swatch, .choose-button, .segmented button { min-height: 44px; }
+      .swatch { width: 44px; }
+      .advanced select { font-size: 1rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    }
+
+    .icon-defs { position: absolute; pointer-events: none; }
+    .skip-link { position: fixed; top: 8px; left: 8px; z-index: 20; padding: 12px 20px; background: var(--c-surface); border-radius: var(--r-sm); transform: translateY(-150%); }
+    .skip-link:focus { transform: translateY(0); }
+    .dropzone { cursor: pointer; }
+    .dropzone:hover { border-color: var(--c-accent); background: #fcfaf9; }
+    .stage video.picking { cursor: crosshair; }
+    .stage.picking { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+    .custom-color { min-width: 0; }
+    .parameter-controls { display: grid; gap: var(--s-4); }
+    .parameter-controls .helper { margin-top: 0; }
+    .color-row { display: flex; align-items: center; gap: var(--s-2); margin-top: var(--s-2); }
+    .color-row input[type="color"] { flex: 0 0 44px; width: 44px; height: 44px; padding: 4px; border: 1px solid var(--c-border); background: var(--c-surface); border-radius: var(--r-sm); cursor: pointer; }
+    .color-row label { min-width: 0; flex: 1; font-size: var(--t-xs); color: var(--c-muted); }
+    .color-row input[type="number"] { min-width: 0; width: 100%; min-height: 36px; border: 1px solid var(--c-border); border-radius: 6px; padding: 4px 6px; color: var(--c-text); background: var(--c-surface); }
+    output { color: var(--c-accent); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+    .stage video:not([hidden]), .stage img:not([hidden]) { display: block; }
+    .status-dot { box-shadow: 0 0 0 3px #22765b0c; }
+    .step.done .step-number { background: var(--c-accent-soft); border-color: transparent; color: var(--c-accent); }
+    .result-actions .button { min-width: 0; }
+    input[type="range"] { cursor: pointer; }
+    input:disabled, select:disabled { opacity: .5; cursor: not-allowed; }
+    .error-box { overflow-wrap: anywhere; }
+    .file-meta { overflow-wrap: anywhere; }
+    @media (max-width: 759px) {
+      .intro-top { gap: 8px; }
+      .info-section p { line-height: 1.8; }
+      .color-row input[type="number"] { font-size: 1rem; }
+      .custom-color .text-button { min-height: 44px; }
+    }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#mainTitle">跳转到制作工作台</a>
+<svg width="0" height="0" aria-hidden="true" class="icon-defs"><defs><symbol id="i-logo" viewBox="0 0 24 24"><path d="M5 4h14v6H9v4h10v6H5z" fill="currentColor" stroke="none"/></symbol></defs></svg>
+<header class="site-header"><div class="container header-row">
+  <a href="./" class="brand" aria-label="帧刻首页"><span class="brand-mark"><svg class="icon"><use href="#i-logo"/></svg></span><span class="brand-name">帧刻</span><span class="brand-sub">GIF STUDIO</span></a>
+  <button class="text-button" id="helpButton"><i data-lucide="info" class="icon" aria-hidden="true"></i>保存指南</button>
+</div></header>
+<main class="container">
+  <section class="intro" aria-labelledby="mainTitle">
+    <div class="intro-top"><h1 id="mainTitle">让片刻，<span>动起来。</span></h1><span class="connection" id="connection" data-online="true" title="全部处理在当前浏览器完成，不会上传视频"><span class="status-dot"></span><span>浏览器本地处理</span></span></div>
+    <p class="intro-copy">视频里的好瞬间，一键变成透明 GIF。</p>
+    <nav class="steps" aria-label="制作步骤"><span class="step current" id="step1"><span class="step-number">1</span>上传视频</span><span class="step-line"></span><span class="step" id="step2"><span class="step-number">2</span>调整效果</span><span class="step-line"></span><span class="step" id="step3"><span class="step-number">3</span>保存 GIF</span></nav>
+  </section>
+  <div class="workspace">
+    <section class="panel editor" aria-label="GIF 制作设置">
+      <div class="section-label"><h2><span class="section-number">01</span>选择视频</h2><span class="tiny">原视频完整转换</span></div>
+      <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm" hidden aria-label="选择要转换的视频">
+      <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="点击或拖入视频文件">
+        <div class="upload-symbol"><i data-lucide="upload" class="icon" aria-hidden="true"></i></div>
+        <p class="drop-title">把视频里的瞬间留下来</p><p class="drop-copy">MP4 / MOV / WebM · 拖放或点击上传</p>
+        <button class="button button-dark choose-button" id="chooseButton">选择视频<i data-lucide="arrow-right" class="icon" aria-hidden="true"></i></button>
+      </div>
+      <div class="selected-file" id="selectedFile" hidden><span class="file-symbol"><i data-lucide="film" class="icon" aria-hidden="true"></i></span><div class="file-details"><p class="filename" id="filename"></p><p class="file-meta" id="fileMeta"></p></div><button class="icon-button" id="replaceButton" aria-label="重新选择视频" title="重新选择"><i data-lucide="upload" class="icon" aria-hidden="true"></i></button></div>
+      <div class="editor-section">
+        <div class="section-label"><h2><span class="section-number">02</span>背景处理</h2><span class="tiny">自由选择</span></div>
+        <div class="segmented" id="modeControl" aria-label="背景处理方式"><button data-mode="color" aria-pressed="true"><i data-lucide="scan" class="icon" aria-hidden="true"></i>透明背景</button><button data-mode="keep" aria-pressed="false"><i data-lucide="image" class="icon" aria-hidden="true"></i>保留背景</button></div>
+        <p class="helper" id="modeHint">适合黑幕、白底、绿幕等纯色背景，保留主体细节。</p>
+        <div class="background-choice" id="backgroundChoice"><label for="backgroundInput">需要移除的背景色<select id="backgroundInput"><option value="auto" selected>自动识别背景（推荐）</option><option value="#00ff00">绿色背景 / 绿幕</option><option value="black">黑色背景</option><option value="white">白色背景</option><option value="custom">自定义 / 画面取色</option></select></label></div>
+      </div>
+      <div class="editor-section">
+        <div class="section-label"><h2><span class="section-number">03</span>参数设置</h2><span class="tiny">GIF · 无限循环</span></div>
+        <div class="parameter-controls">
+          <div><label for="fps" class="range-heading">帧率（FPS）<output id="fpsValue">30 fps</output></label><input id="fps" type="range" min="5" max="60" value="30" step="1"></div>
+          <div><label for="quality" class="range-heading">GIF 质量<output id="qualityValue">1</output></label><input id="quality" type="range" min="1" max="30" value="1" step="1"><p class="helper">数值越小质量越高，文件也会更大。</p></div>
+          <div><label for="scale" class="range-heading">缩放比例<output id="scaleValue">100%</output></label><input id="scale" type="range" min="0.1" max="1" value="1" step="0.1"><p class="helper">100% 为原始尺寸，缩小比例可减小文件。</p></div>
+          <div><label for="thresholdInput" class="range-heading">背景移除阈值<output id="thresholdValue" for="thresholdInput">30</output></label><input id="thresholdInput" type="range" min="0" max="255" value="30" step="5"><p class="helper">值越大，移除的相近背景色越多。</p></div>
+        </div>
+        <details id="advancedDetails"><summary><i data-lucide="chevron-right" class="icon" aria-hidden="true"></i>背景颜色与取色</summary><div class="advanced">
+          <div class="custom-color" id="customColor" hidden><div class="range-heading"><label for="colorPicker">需要移除的颜色</label><output id="colorValue">#FFFFFF</output></div><div class="color-row"><input id="colorPicker" type="color" value="#ffffff" aria-label="选择背景颜色"><label>R<input id="colorR" type="number" min="0" max="255" value="255" inputmode="numeric"></label><label>G<input id="colorG" type="number" min="0" max="255" value="255" inputmode="numeric"></label><label>B<input id="colorB" type="number" min="0" max="255" value="255" inputmode="numeric"></label></div><button class="text-button" id="pickColorButton" disabled><i data-lucide="pipette" class="icon" aria-hidden="true"></i><span>从视频画面取色</span></button><p class="helper" id="pickHint">选择视频后，可直接点击画面采样背景色。</p></div>
+          <label class="checkbox-row" for="protectInput"><input type="checkbox" id="protectInput">保护主体内部的同色细节</label>
+          <p class="helper">默认也移除手臂等围出的封闭背景。开启保护后，这些空隙可能被保留；绿幕素材建议保持关闭。</p>
+        </div></details>
+      </div>
+      <div id="errorBox" class="error-box" role="alert" hidden></div>
+      <div class="progress-box" id="progressBox" role="status" aria-live="polite" hidden><div class="progress-heading"><strong id="progressTitle">正在读取视频</strong><span id="progressPercent">0%</span></div><div class="progress-track" role="progressbar" id="progressBar" aria-label="制作进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progressFill"></div></div><div class="progress-bottom"><span class="tiny" id="progressDetail">请保持页面打开</span><button class="text-button" id="cancelButton">取消</button></div></div>
+      <div class="action-area"><button class="primary-button" id="convertButton" disabled><i data-lucide="film" class="icon" aria-hidden="true"></i><span id="convertLabel">开始制作 GIF</span><i data-lucide="arrow-right" class="icon" aria-hidden="true"></i></button><p class="action-hint" id="actionHint">无需上传 · 无水印 · 原视频不变</p></div>
+    </section>
+    <div class="side-column">
+      <section class="panel preview-panel" aria-label="效果预览">
+        <div class="preview-header"><h2>效果预览</h2><div class="preview-tabs" aria-label="预览内容"><button id="originalTab" aria-pressed="false" disabled>原视频</button><button id="gifTab" aria-pressed="true">GIF 效果</button></div></div>
+        <div class="stage" id="stage" data-background="checker"><span class="stage-tag" id="stageTag">透明背景效果示例</span><img id="gifPreview" src="assets/demo.gif" alt="透明背景 GIF 示例，人物在棋盘格底色上运动"><video id="videoPreview" controls playsinline muted preload="metadata" hidden></video><div class="stage-placeholder" id="stagePlaceholder" hidden><i data-lucide="film" class="icon" aria-hidden="true"></i><p>你的好瞬间，即将在这里动起来</p><p class="tiny">先选择一段视频开始制作</p></div></div>
+        <div class="preview-tools"><div class="swatches" aria-label="预览底色"><span class="tiny">预览底色</span><button class="swatch" data-background="checker" aria-pressed="true" aria-label="棋盘格底色"><span></span></button><button class="swatch" data-background="white" aria-pressed="false" aria-label="白色底色"><span></span></button><button class="swatch" data-background="black" aria-pressed="false" aria-label="深色底色"><span></span></button></div><button class="text-button" id="demoButton">查看示例<i data-lucide="arrow-right" class="icon" aria-hidden="true"></i></button></div>
+        <div class="result-info" id="resultInfo" hidden><strong><i data-lucide="check" class="icon" aria-hidden="true"></i><span id="resultBadge">制作完成</span></strong><span id="resultDimensions"></span><span id="resultSize"></span></div>
+        <div class="result-actions" id="resultActions" hidden><button class="button button-dark" id="saveButton"><i data-lucide="download" class="icon" aria-hidden="true"></i>保存 GIF</button><button class="button button-outline" id="regenerateButton">重新制作</button></div>
+        <div class="preview-note"><i data-lucide="info" class="icon" aria-hidden="true"></i><p id="previewNote">棋盘格仅用于展示透明区域，不会出现在导出的 GIF 中。</p></div>
+      </section>
+      <section class="info-section"><i data-lucide="shield-check" class="icon" aria-hidden="true"></i><div><strong>你的素材，只为这次创作</strong><p>视频不上传，转换全程在你的浏览器完成。关闭页面后不会保留素材与结果，请及时保存。</p></div></section>
+    </div>
+  </div>
+</main>
+<footer class="container"><span>帧刻 GIF Studio · 留住每一帧灵感</span><span class="footer-copy"><i data-lucide="info" class="icon" aria-hidden="true"></i>GIF 无声音，不支持半透明</span></footer>
+<dialog id="saveDialog" aria-labelledby="saveTitle"><div class="dialog-header"><h2 id="saveTitle">把这一刻，存起来</h2><button class="icon-button" data-close-dialog aria-label="关闭保存窗口"><i data-lucide="x" class="icon" aria-hidden="true"></i></button></div><div class="dialog-body"><p id="saveGuide">长按下方动图，选择“保存图片”；也可以下载 GIF 文件。</p><div class="notice" id="wechatNotice" hidden>微信内可能限制保存或下载，请点右上角菜单，选择“在浏览器打开”。</div><div class="save-image-wrap"><img id="saveImage" alt="长按此 GIF 尝试保存到相册"></div><div class="save-caption">这是原始 GIF 文件，长按不会保存棋盘格背景</div><div class="dialog-actions"><a class="button button-dark" id="downloadLink" download="framekit.gif"><i data-lucide="download" class="icon" aria-hidden="true"></i>下载 GIF</a><button class="button button-outline" id="shareButton"><i data-lucide="share" class="icon" aria-hidden="true"></i>系统分享</button></div><p class="save-message" id="saveMessage" role="status" aria-live="polite"></p></div></dialog>
+<dialog id="helpDialog" aria-labelledby="helpTitle"><div class="dialog-header"><h2 id="helpTitle">怎样保存到手机？</h2><button class="icon-button" data-close-dialog aria-label="关闭保存指南"><i data-lucide="x" class="icon" aria-hidden="true"></i></button></div><div class="dialog-body"><p>网页需要你确认保存，不能直接写入手机相册。</p><ul class="guide-list"><li><strong>iPhone / iPad</strong><p>优先长按 GIF，选择“存储到照片”；支持文件分享的浏览器也可通过系统分享菜单保存。下载按钮通常保存到“文件”，不会自动进入相册。</p></li><li><strong>Android</strong><p>长按 GIF 选择“保存图片”，或下载后在“下载”目录中查找。是否自动显示在相册取决于浏览器与相册应用。</p></li><li><strong>微信内置浏览器</strong><p>如果无法下载或保存，请从右上角菜单选择“在浏览器打开”，再使用 Safari 或系统浏览器操作。</p></li></ul><div class="notice">部分相册静态展示 GIF 封面，打开图片后才会播放。复杂背景建议选择“保留背景”，本页去背景功能针对纯色背景。</div></div></dialog>
+<aside class="tweaks" id="tweaksPanel" hidden><strong>Tweaks</strong><label for="themeTweak">视觉配色<select id="themeTweak"><option value="#ed542f">暖橙</option><option value="#267d69">墨绿</option><option value="#7165bf">柔紫</option></select></label><label for="accentTweak">强调色<input type="color" id="accentTweak" value="#ed542f"></label><label for="sizeTweak">文字比例<input type="range" id="sizeTweak" min="14" max="18" value="16"></label></aside>
+<canvas id="canvas" hidden></canvas>
+<canvas id="pickCanvas" hidden></canvas>
+<script>
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{"primaryColor":"#ed542f","fontSize":16,"variant":"#ed542f"}/*EDITMODE-END*/;
+</script>
+<script src="assets/lucide.min.js"></script>
+<script src="gif.js"></script>
+<script src="app.js?v=local-animation-preview-11"></script>
+</body>
+</html>
